@@ -1,0 +1,219 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif-kr: "Noto Serif KR", "Nanum Myeongjo", Georgia, serif;
+  --font-sans-kr: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+
+  /* === 아이보리 베이스 === */
+  --color-ivory: #f3efe6;
+  --color-ivory-warm: #ece5d4;
+  --color-ivory-deep: #e0d6c0;
+  --color-parchment: #cec2a6;
+
+  /* === 잉크 계열 === */
+  --color-ink: #1c1a16;
+  --color-ink-soft: #5a5650;
+  --color-ink-muted: #88837a;
+  --color-ink-faint: #a8a39a;
+
+  /* === 숲·브랜드 그린 === */
+  --color-forest: #38503e;
+  --color-forest-mid: #4c6d58;
+  --color-forest-dark: #22312a;
+  --color-forest-light: #e8f0ea;
+
+  /* === 바다 === */
+  --color-sea: #1d5c78;
+  --color-sea-soft: #e2f2f9;
+
+  /* === 황토·골드 === */
+  --color-loess: #a46828;
+  --color-loess-soft: #f5ebda;
+  --color-amber: #d97316;
+  --color-amber-soft: #fef0e2;
+
+  /* === 별밤 === */
+  --color-night: #1e1b38;
+  --color-dusk-soft: #eeebff;
+
+  /* === 인터랙션 액센트 === */
+  --color-accent: #2b6ce0;
+  --color-accent-dark: #1852bc;
+  --color-accent-soft: #e4edfb;
+
+  --color-mint: #0c9e74;
+  --color-mint-soft: #dcf5ec;
+
+  /* === 서피스·라인 === */
+  --color-line: #e4dec8;
+  --color-line-soft: #ebe6d8;
+  --color-card: #ffffff;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-ivory);
+  color: var(--color-ink);
+  font-family: var(--font-sans-kr);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.02em;
+}
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 0;
+  width: 0;
+}
+
+/* ─── 세리프 ─── */
+.font-serif-kr {
+  font-family: var(--font-serif-kr);
+}
+
+/* ─── 그림자 ─── */
+.card-soft {
+  box-shadow: 0 1px 2px rgba(28, 26, 22, 0.03), 0 6px 20px -8px rgba(28, 26, 22, 0.09);
+}
+.card-soft-lg {
+  box-shadow: 0 2px 8px rgba(28, 26, 22, 0.05), 0 16px 40px -12px rgba(28, 26, 22, 0.16);
+}
+.shadow-float {
+  box-shadow: 0 8px 28px -6px rgba(28, 26, 22, 0.18), 0 2px 6px rgba(28, 26, 22, 0.06);
+}
+.shadow-accent {
+  box-shadow: 0 8px 24px -8px rgba(43, 108, 224, 0.55);
+}
+.shadow-forest {
+  box-shadow: 0 8px 24px -8px rgba(56, 80, 62, 0.55);
+}
+
+/* ─── 탭 인터랙션 ─── */
+.tap {
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tap:active {
+  transform: scale(0.95);
+  opacity: 0.88;
+}
+
+/* ─── 글래스모피즘 ─── */
+.glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+.glass-ivory {
+  background: rgba(243, 239, 230, 0.92);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+.glass-dark {
+  background: rgba(28, 26, 22, 0.6);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+}
+
+/* ─── 애니메이션 ─── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(43, 108, 224, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(43, 108, 224, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(43, 108, 224, 0);
+  }
+}
+
+.animate-in {
+  animation: fadeSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-float {
+  animation: float 3.5s ease-in-out infinite;
+}
+
+.animate-gradient {
+  animation: gradientShift 12s ease infinite;
+  background-size: 300% 300%;
+}
