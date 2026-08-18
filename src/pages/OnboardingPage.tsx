@@ -87,11 +87,10 @@ export default function OnboardingPage() {
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="닉네임을 입력하세요"
               maxLength={12}
-              className="w-full bg-transparent py-3 text-[22px] font-bold outline-none placeholder:font-medium"
+              className="w-full bg-transparent py-3 text-[22px] font-bold outline-none placeholder:font-medium placeholder:text-[var(--color-ink-faint)]"
               style={{
                 color: "var(--color-ink)",
                 borderBottom: "2.5px solid var(--color-accent)",
-                placeholderColor: "var(--color-ink-faint)",
               }}
             />
           </div>
