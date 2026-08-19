@@ -275,7 +275,7 @@ export default function RegionArt({
   const style = getStyle(region);
   const uid = region.id;
 
-  const art = {
+  const svgArt = {
     mountain: <MountainArt c1={c1} c2={c2} uid={uid} />,
     hanok: <HanokArt c1={c1} c2={c2} uid={uid} />,
     sea: <SeaArt c1={c1} c2={c2} uid={uid} />,
@@ -286,7 +286,24 @@ export default function RegionArt({
 
   return (
     <div className={`relative overflow-hidden flex items-end ${className}`}>
-      {art}
+      {region.heroImage ? (
+        <img
+          src={region.heroImage}
+          alt={region.name}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => {
+            // 이미지 로드 실패 시 SVG art로 폴백
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
+      ) : (
+        svgArt
+      )}
+      {/* SVG art를 이미지 뒤 배경으로도 항상 깔아둠 (fallback) */}
+      {region.heroImage && (
+        <div className="absolute inset-0 -z-10">{svgArt}</div>
+      )}
       {label && (
         <>
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" />

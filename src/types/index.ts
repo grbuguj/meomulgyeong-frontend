@@ -27,6 +27,7 @@ export interface Region {
   travelStyle: string; // 여행 성격
   localTip: string; // 현지인 꿀정보
   heroPalette: [string, string]; // gradient colors
+  heroImage?: string; // real photo URL (optional fallback to SVG art)
   isVerifiedHub: boolean; // 안동 대표 검증 거점 여부
   representativeSpots: string[];
 }
