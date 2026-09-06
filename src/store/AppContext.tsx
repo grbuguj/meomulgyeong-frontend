@@ -1,5 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CompanionType, Itinerary, TagKey, TripCompletion, UserProfile } from "../types";
+import {
+  fetchMe,
+  logoutLocally,
+  registerOnboardingNickname,
+  updateProfile as updateProfileApi,
+  type MeResponse,
+} from "../lib/authApi";
+import { getAccessToken } from "../lib/apiClient";
+import { listMyItineraries, resolveFrontendRegionId, toFrontendItinerary } from "../lib/itineraryApi";
 
 const STORAGE_KEY = "meomulgyeong_state_v1";
 
@@ -16,10 +25,13 @@ interface AppState {
 }
 
 interface AppContextValue extends AppState {
-  login: (provider: "google" | "kakao" | "naver") => void;
+  /** 인증 초기화(토큰 검증 + 내 정보 조회) 진행 중 여부 — 앱 부팅 시 깜빡임/오탐 리다이렉트 방지용 */
+  authLoading: boolean;
+  /** 로그인 성공 콜백(OAuthCallbackPage)에서 토큰 저장 후 이 함수로 사용자 정보를 불러온다 */
+  refreshMe: () => Promise<void>;
   logout: () => void;
-  completeOnboarding: (nickname: string) => void;
-  updateNickname: (nickname: string) => void;
+  completeOnboarding: (nickname: string) => Promise<void>;
+  updateNickname: (nickname: string) => Promise<void>;
   setSelection: (tags: TagKey[], nights: number, companion: CompanionType) => void;
   saveItinerary: (itin: Itinerary) => void;
   removeSavedItinerary: (itinId: string) => void;
@@ -44,17 +56,25 @@ const initialState: AppState = {
   lastSelection: { tags: [], nights: 1, companion: null },
 };
 
-// 새로고침 시 로그인/여행 데이터가 사라지지 않도록 브라우저 로컬 저장소에 보관
-// (이 앱은 claude.ai 아티팩트가 아닌 독립 실행형 웹앱이라 localStorage 사용 가능)
+// 로그인/토큰은 서버가 진실 소스(source of truth)이므로 localStorage에는
+// 여행 관련 화면 상태(저장 일정, 마지막 선택)만 캐싱한다.
 function loadInitialState(): AppState {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialState;
     const parsed = JSON.parse(raw);
-    return { ...initialState, ...parsed };
+    return { ...initialState, ...parsed, isLoggedIn: false, hasOnboarded: false, user: initialUser };
   } catch {
     return initialState;
   }
+}
+
+function toUserProfile(me: MeResponse, prev: UserProfile): UserProfile {
+  return {
+    ...prev,
+    nickname: me.nickname ?? "",
+    loginProvider: me.provider,
+  };
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -62,37 +82,79 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile>(loaded.user);
   const [isLoggedIn, setIsLoggedIn] = useState(loaded.isLoggedIn);
   const [hasOnboarded, setHasOnboarded] = useState(loaded.hasOnboarded);
+  const [authLoading, setAuthLoading] = useState(true);
   const [savedItineraries, setSavedItineraries] = useState<Itinerary[]>(loaded.savedItineraries);
   const [lastSelection, setLastSelection] = useState<AppState["lastSelection"]>(loaded.lastSelection);
 
+  // 여행 상태(저장 일정/마지막 선택)만 로컬에 캐싱 — 로그인 여부/유저 정보는 서버 재조회로 관리
   useEffect(() => {
-    const state: AppState = { user, isLoggedIn, hasOnboarded, savedItineraries, lastSelection };
+    const state = { savedItineraries, lastSelection };
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       // storage unavailable — silently skip persistence
     }
-  }, [user, isLoggedIn, hasOnboarded, savedItineraries, lastSelection]);
+  }, [savedItineraries, lastSelection]);
 
-  const login = (provider: "google" | "kakao" | "naver") => {
-    setUser((u) => ({ ...u, loginProvider: provider }));
-    setIsLoggedIn(true);
+  const refreshMe = async () => {
+    const token = getAccessToken();
+    if (!token) {
+      setIsLoggedIn(false);
+      setHasOnboarded(false);
+      setAuthLoading(false);
+      return;
+    }
+    try {
+      const me = await fetchMe();
+      setUser((u) => toUserProfile(me, u));
+      setIsLoggedIn(true);
+      setHasOnboarded(me.onboardingCompleted);
+      // 서버 북마크 목록을 로컬 상태에 동기화한다 — 실패해도 로컬 캐시를 유지한다.
+      // TODO: 백엔드 실제 스펙 확인 필요 — listMyItineraries 엔드포인트가 북마크 목록을 반환하는지 확인
+      listMyItineraries()
+        .then((serverItins) => {
+          const mapped = serverItins.map((res) =>
+            toFrontendItinerary(res, resolveFrontendRegionId(res.regionName, res.regionId))
+          );
+          setSavedItineraries((prev) => {
+            const serverIds = new Set(mapped.map((i) => i.id));
+            const localOnly = prev.filter((i) => !serverIds.has(i.id));
+            return [...mapped.map((i) => ({ ...i, savedAt: i.savedAt ?? new Date().toISOString() })), ...localOnly];
+          });
+        })
+        .catch(() => {/* 서버 동기화 실패 — 로컬 캐시 유지 */});
+    } catch {
+      // 토큰 만료/무효 — apiClient가 이미 로컬 토큰을 정리했으므로 로그아웃 상태로 되돌림
+      setIsLoggedIn(false);
+      setHasOnboarded(false);
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
+  // 앱 부팅 시 저장된 토큰이 있으면 내 정보를 조회해 로그인 상태를 복원한다.
+  useEffect(() => {
+    refreshMe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const logout = () => {
+    logoutLocally();
     setIsLoggedIn(false);
     setHasOnboarded(false);
     setUser(initialUser);
     setSavedItineraries([]);
   };
 
-  const completeOnboarding = (nickname: string) => {
-    setUser((u) => ({ ...u, nickname }));
-    setHasOnboarded(true);
+  const completeOnboarding = async (nickname: string) => {
+    const me = await registerOnboardingNickname(nickname);
+    setUser((u) => toUserProfile(me, u));
+    setHasOnboarded(me.onboardingCompleted);
   };
 
-  const updateNickname = (nickname: string) => {
-    setUser((u) => ({ ...u, nickname }));
+  const updateNickname = async (nickname: string) => {
+    const me = await updateProfileApi({ nickname });
+    setUser((u) => toUserProfile(me, u));
   };
 
   const setSelection = (tags: TagKey[], nights: number, companion: CompanionType) => {
@@ -125,9 +187,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       user,
       isLoggedIn,
       hasOnboarded,
+      authLoading,
       savedItineraries,
       lastSelection,
-      login,
+      refreshMe,
       logout,
       completeOnboarding,
       updateNickname,
@@ -136,7 +199,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeSavedItinerary,
       completeTrip,
     }),
-    [user, isLoggedIn, hasOnboarded, savedItineraries, lastSelection]
+    [user, isLoggedIn, hasOnboarded, authLoading, savedItineraries, lastSelection]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

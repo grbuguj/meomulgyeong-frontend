@@ -159,7 +159,10 @@ export default function RegionDetailPage() {
         <Button
           variant="accent"
           fullWidth
-          onClick={() => navigate(`/itinerary/${region.id}?nights=2&companion=alone`)}
+          onClick={() => {
+            const base = `/itinerary/${region.id}?nights=2&companion=SOLO`;
+            navigate(region.backendId ? `${base}&backendRegionId=${region.backendId}` : base);
+          }}
         >
           이 지역으로 일정 만들기
         </Button>

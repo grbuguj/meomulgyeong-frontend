@@ -30,6 +30,8 @@ export interface Region {
   heroImage?: string; // real photo URL (optional fallback to SVG art)
   isVerifiedHub: boolean; // 안동 대표 검증 거점 여부
   representativeSpots: string[];
+  // TODO: 백엔드 실제 스펙 확인 필요 — 백엔드 region_id 확정 후 regions.ts에 채워야 함
+  backendId?: number;
 }
 
 export interface PlaceItem {
@@ -51,6 +53,8 @@ export interface DayPlan {
 export interface Itinerary {
   id: string;
   regionId: string;
+  /** 백엔드 itinerary_id (정수). API 호출(교체/재생성/완료/북마크)에 사용한다. */
+  backendItineraryId?: number;
   nights: number;
   companion: CompanionType;
   days: DayPlan[];

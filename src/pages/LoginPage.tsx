@@ -1,8 +1,7 @@
-import { useNavigate } from "react-router-dom";
-import { useApp } from "../store/AppContext";
+import { startSocialLogin, type SocialProvider } from "../lib/authApi";
 
 const SOCIAL_BUTTONS: {
-  key: "google" | "kakao" | "naver";
+  key: SocialProvider;
   label: string;
   bg: string;
   text: string;
@@ -14,12 +13,10 @@ const SOCIAL_BUTTONS: {
 ];
 
 export default function LoginPage() {
-  const { login } = useApp();
-  const navigate = useNavigate();
-
-  const handleLogin = (provider: "google" | "kakao" | "naver") => {
-    login(provider);
-    navigate("/onboarding");
+  // 실제 소셜 로그인은 백엔드 OAuth2 엔드포인트로 리다이렉트한 뒤
+  // 로그인 성공 시 /oauth/callback?accessToken=... 으로 되돌아온다. (OAuthCallbackPage 참고)
+  const handleLogin = (provider: SocialProvider) => {
+    startSocialLogin(provider);
   };
 
   return (

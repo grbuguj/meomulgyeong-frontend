@@ -2,16 +2,34 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../store/AppContext";
 import Button from "../components/Button";
+import { checkNicknameAvailability } from "../lib/authApi";
+import { ApiError } from "../lib/apiClient";
 
 export default function OnboardingPage() {
   const { completeOnboarding, user } = useApp();
   const [nickname, setNickname] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleSubmit = () => {
-    if (!nickname.trim()) return;
-    completeOnboarding(nickname.trim());
-    navigate("/home");
+  const handleSubmit = async () => {
+    const value = nickname.trim();
+    if (!value || submitting) return;
+    setSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const { available } = await checkNicknameAvailability(value);
+      if (!available) {
+        setErrorMessage("이미 사용 중인 닉네임이에요.");
+        return;
+      }
+      await completeOnboarding(value);
+      navigate("/home");
+    } catch (e) {
+      setErrorMessage(e instanceof ApiError ? e.message : "닉네임 등록에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const providerLabel =
@@ -94,16 +112,25 @@ export default function OnboardingPage() {
               }}
             />
           </div>
-          <p
-            className="text-right text-[11px] font-semibold"
-            style={{ color: "var(--color-ink-faint)" }}
-          >
-            {nickname.length}/12
-          </p>
+          <div className="flex items-center justify-between">
+            {errorMessage ? (
+              <p className="text-[11px] font-semibold" style={{ color: "#c0392b" }}>
+                {errorMessage}
+              </p>
+            ) : (
+              <span />
+            )}
+            <p
+              className="text-right text-[11px] font-semibold"
+              style={{ color: "var(--color-ink-faint)" }}
+            >
+              {nickname.length}/12
+            </p>
+          </div>
         </div>
 
-        <Button variant="accent" fullWidth disabled={!nickname.trim()} onClick={handleSubmit}>
-          시작하기
+        <Button variant="accent" fullWidth disabled={!nickname.trim() || submitting} onClick={handleSubmit}>
+          {submitting ? "확인 중…" : "시작하기"}
         </Button>
       </div>
     </div>

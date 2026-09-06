@@ -7,6 +7,7 @@ import { useApp } from "../store/AppContext";
 import { useState } from "react";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
+import { ApiError } from "../lib/apiClient";
 
 export default function MyPage() {
   const { user, savedItineraries, removeSavedItinerary, logout, updateNickname } = useApp();
@@ -15,10 +16,22 @@ export default function MyPage() {
   const [termsOpen, setTermsOpen] = useState(false);
   const [editingNickname, setEditingNickname] = useState(false);
   const [nicknameDraft, setNicknameDraft] = useState(user.nickname);
+  const [savingNickname, setSavingNickname] = useState(false);
+  const [nicknameError, setNicknameError] = useState<string | null>(null);
 
-  const saveNickname = () => {
-    if (nicknameDraft.trim()) updateNickname(nicknameDraft.trim());
-    setEditingNickname(false);
+  const saveNickname = async () => {
+    const value = nicknameDraft.trim();
+    if (!value || savingNickname) return;
+    setSavingNickname(true);
+    setNicknameError(null);
+    try {
+      await updateNickname(value);
+      setEditingNickname(false);
+    } catch (e) {
+      setNicknameError(e instanceof ApiError ? e.message : "닉네임 변경에 실패했어요.");
+    } finally {
+      setSavingNickname(false);
+    }
   };
 
   const stampPct = Math.round((user.stamps.length / 15) * 100);
@@ -182,9 +195,10 @@ export default function MyPage() {
                     </div>
                     <div className="flex gap-3">
                       <button
-                        onClick={() =>
-                          navigate(`/itinerary/${itin.regionId}?nights=${itin.nights}&companion=${itin.companion}`)
-                        }
+                        onClick={() => {
+                          const base = `/itinerary/${itin.regionId}?nights=${itin.nights}&companion=${itin.companion}`;
+                          navigate(itin.backendItineraryId ? `${base}&itineraryId=${itin.backendItineraryId}` : base);
+                        }}
                         className="text-[12px] font-bold tap"
                         style={{ color: "var(--color-accent)" }}
                       >
@@ -276,26 +290,34 @@ export default function MyPage() {
               닉네임
             </span>
             {editingNickname ? (
-              <div className="flex items-center gap-2">
-                <input
-                  autoFocus
-                  value={nicknameDraft}
-                  onChange={(e) => setNicknameDraft(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && saveNickname()}
-                  maxLength={12}
-                  className="text-right text-[14px] font-bold rounded-lg px-2 py-1 outline-none w-28"
-                  style={{
-                    background: "var(--color-ivory-deep)",
-                    color: "var(--color-ink)",
-                  }}
-                />
-                <button
-                  onClick={saveNickname}
-                  className="text-[12px] font-bold tap"
-                  style={{ color: "var(--color-accent)" }}
-                >
-                  완료
-                </button>
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={nicknameDraft}
+                    onChange={(e) => setNicknameDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveNickname()}
+                    maxLength={12}
+                    className="text-right text-[14px] font-bold rounded-lg px-2 py-1 outline-none w-28"
+                    style={{
+                      background: "var(--color-ivory-deep)",
+                      color: "var(--color-ink)",
+                    }}
+                  />
+                  <button
+                    onClick={saveNickname}
+                    disabled={savingNickname}
+                    className="text-[12px] font-bold tap"
+                    style={{ color: "var(--color-accent)" }}
+                  >
+                    {savingNickname ? "저장 중…" : "완료"}
+                  </button>
+                </div>
+                {nicknameError && (
+                  <span className="text-[10.5px] font-semibold" style={{ color: "#c0392b" }}>
+                    {nicknameError}
+                  </span>
+                )}
               </div>
             ) : (
               <button
