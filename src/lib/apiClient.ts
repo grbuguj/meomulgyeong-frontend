@@ -7,7 +7,7 @@
  *   VITE_API_BASE_URL  예) http://localhost:8080 (로컬), 배포 후 실제 서버 주소로 교체
  */
 
-const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? "https://meomulgyeong.duckdns.org";
 
 const ACCESS_TOKEN_KEY = "meomulgyeong_access_token";
 
