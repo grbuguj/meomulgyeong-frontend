@@ -34,7 +34,8 @@ interface AppContextValue extends AppState {
   /** 인증 초기화(토큰 검증 + 내 정보 조회) 진행 중 여부 — 앱 부팅 시 깜빡임/오탐 리다이렉트 방지용 */
   authLoading: boolean;
   /** 로그인 성공 콜백(OAuthCallbackPage)에서 토큰 저장 후 이 함수로 사용자 정보를 불러온다 */
-  refreshMe: () => Promise<void>;
+  /** 온보딩 완료 여부를 반환한다. */
+  refreshMe: () => Promise<boolean>;
   logout: () => void;
   completeOnboarding: (nickname: string) => Promise<void>;
   updateNickname: (nickname: string) => Promise<void>;
@@ -102,13 +103,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [savedItineraries, lastSelection]);
 
-  const refreshMe = async () => {
+  /** 로그인 상태를 서버 기준으로 갱신한다. 온보딩 완료 여부를 반환해 호출부가
+   *  React state 갱신을 기다리지 않고도 바로 어느 화면으로 갈지 정할 수 있게 한다. */
+  const refreshMe = async (): Promise<boolean> => {
     const token = getAccessToken();
     if (!token) {
       setIsLoggedIn(false);
       setHasOnboarded(false);
       setAuthLoading(false);
-      return;
+      return false;
     }
     try {
       const me = await fetchMe();
@@ -164,10 +167,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }));
         })
         .catch(() => {/* 서버 동기화 실패 — 로컬 캐시 유지 */});
+
+      return me.onboardingCompleted;
     } catch {
       // 토큰 만료/무효 — apiClient가 이미 로컬 토큰을 정리했으므로 로그아웃 상태로 되돌림
       setIsLoggedIn(false);
       setHasOnboarded(false);
+      return false;
     } finally {
       setAuthLoading(false);
     }

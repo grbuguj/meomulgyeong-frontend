@@ -11,7 +11,7 @@ import { useApp } from "../store/AppContext";
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { refreshMe, hasOnboarded } = useApp();
+  const { refreshMe } = useApp();
   const [error, setError] = useState<string | null>(null);
   const ran = useRef(false);
 
@@ -26,18 +26,15 @@ export default function OAuthCallbackPage() {
     }
 
     setAccessToken(accessToken);
-    refreshMe().then(() => {
-      // hasOnboarded는 refreshMe 완료 시점의 상태를 즉시 참조하기 어려우므로
-      // /api/users/me를 다시 확인해 분기한다(useApp 최신값은 다음 렌더에 반영됨).
-      navigate("/onboarding", { replace: true });
+    // refreshMe가 반환하는 값으로 바로 분기한다 — 이전에는 무조건 /onboarding으로
+    // 보낸 뒤 별도 effect가 hasOnboarded를 보고 /home으로 "정정"했는데, React state가
+    // 반영되는 타이밍과 이 navigate 호출의 순서가 보장되지 않아 이미 온보딩을 마친
+    // 사용자도 가끔 닉네임 입력 화면으로 튕기는 문제가 있었다.
+    refreshMe().then((onboarded) => {
+      navigate(onboarded ? "/home" : "/onboarding", { replace: true });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
-
-  // refreshMe 완료 후 실제로는 App.tsx의 Gate가 hasOnboarded를 보고 /home으로 다시 보내준다.
-  useEffect(() => {
-    if (hasOnboarded) navigate("/home", { replace: true });
-  }, [hasOnboarded, navigate]);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 px-8 text-center">

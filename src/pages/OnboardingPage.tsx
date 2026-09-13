@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../store/AppContext";
 import Button from "../components/Button";
@@ -6,11 +6,17 @@ import { checkNicknameAvailability } from "../lib/authApi";
 import { ApiError } from "../lib/apiClient";
 
 export default function OnboardingPage() {
-  const { completeOnboarding, user } = useApp();
+  const { completeOnboarding, user, hasOnboarded } = useApp();
   const [nickname, setNickname] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // /onboarding은 Gate로 감싸져 있지 않다(온보딩 전 사용자도 접근해야 하므로).
+  // 이미 온보딩을 마친 사용자가 어떤 경로로든 이 화면에 들어오면 홈으로 돌려보낸다.
+  useEffect(() => {
+    if (hasOnboarded) navigate("/home", { replace: true });
+  }, [hasOnboarded, navigate]);
 
   const handleSubmit = async () => {
     const value = nickname.trim();
