@@ -71,6 +71,8 @@ export default function ItineraryPage() {
     // itineraryId 파라미터가 있으면 기존 저장 일정 조회, 없으면 새로 생성
     const savedItineraryId = Number(params.get("itineraryId") ?? 0);
 
+    // 방금 생성한 일정의 항목은 백엔드가 DB에 flush하기 전 상태로 응답해 itemId가 비어있다
+    // (교체 버튼을 누르면 NaN 오류가 남). 생성 직후 한 번 더 조회해 실제 itemId를 받아온다.
     const load = savedItineraryId
       ? getItinerary(savedItineraryId)
       : createItinerary({
@@ -79,7 +81,7 @@ export default function ItineraryPage() {
           nights,
           startDate: new Date().toISOString().split("T")[0], // 오늘 날짜 기본값
           preferenceTags,
-        });
+        }).then((res) => getItinerary(res.itineraryId));
 
     load
       .then((res) => {
@@ -141,10 +143,15 @@ export default function ItineraryPage() {
 
   const handleSwap = async (itemId: string) => {
     if (!backendItineraryId || swapping) return;
+    const numericItemId = Number(itemId);
+    if (!Number.isFinite(numericItemId)) {
+      setActionError("이 항목은 아직 교체할 수 없어요. 화면을 새로고침한 뒤 다시 시도해주세요.");
+      return;
+    }
     setSwapping(itemId);
     setActionError(null);
     try {
-      const res = await replaceItineraryItem(backendItineraryId, Number(itemId));
+      const res = await replaceItineraryItem(backendItineraryId, numericItemId);
       const updated = await getItinerary(res.itineraryId);
       setItin(toFrontendItinerary(updated, regionId!));
     } catch (e) {
@@ -159,7 +166,9 @@ export default function ItineraryPage() {
     setRegenerating(true);
     setActionError(null);
     try {
-      const res = await regenerateFullItinerary(backendItineraryId);
+      // 재생성 직후 응답도 항목 itemId가 비어있을 수 있어 한 번 더 조회한다 (위 최초 로드와 동일한 이유).
+      await regenerateFullItinerary(backendItineraryId);
+      const res = await getItinerary(backendItineraryId);
       setItin(toFrontendItinerary(res, regionId!));
       setActiveDay(1);
     } catch (e) {

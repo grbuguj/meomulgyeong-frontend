@@ -20,7 +20,6 @@ export function calcContribution(itinerary: Itinerary, visitors: number) {
   const livingPopulationDays = days; // 1일 이상 체류 시 그대로 산입
 
   return {
-    visitedRegions: 1,
     stayHours,
     estimatedSpend,
     livingPopulationDays,

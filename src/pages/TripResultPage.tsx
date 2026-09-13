@@ -53,7 +53,7 @@ export default function TripResultPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          <StatTile label="방문 지역" value={estimated.visitedRegions} unit={`/ 15곳`} tone="accent" accent />
+          <StatTile label="방문 지역" value={user.stamps.length} unit={`/ 15곳`} tone="accent" accent />
           <StatTile label="누적 체류시간" value={stayHours} unit="시간" tone="mint" />
           <StatTile
             label={isServerCalculated ? "지역 소비" : "예상 지역 소비"}
