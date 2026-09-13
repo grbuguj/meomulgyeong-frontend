@@ -257,8 +257,11 @@ export async function getItinerary(itineraryId: number): Promise<ItineraryRespon
 export async function replaceItineraryItem(
   itineraryId: number,
   itemId: number,
-  req: ReplaceItemRequest = {}
+  req?: ReplaceItemRequest
 ): Promise<ReplaceItemResponse> {
+  // req가 없으면 바디 자체를 보내지 않는다. 백엔드 Replace 레코드는 단일 boolean 필드라
+  // 빈 객체("{}")를 보내면 그 필드가 없다고 역직렬화에 실패해 400이 난다.
+  // 바디를 아예 안 보내면 컨트롤러가 @RequestBody(required=false)로 기본값을 적용한다.
   return apiFetch<ReplaceItemResponse>(`/api/itineraries/${itineraryId}/items/${itemId}/replace`, {
     method: "POST",
     body: req,
