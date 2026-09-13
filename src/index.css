@@ -59,12 +59,58 @@ body {
   font-family: var(--font-sans-kr);
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.02em;
+  /* 셸이 화면 높이를 확정하므로 문서 자체는 스크롤하지 않는다. */
+  overscroll-behavior-y: none;
 }
 
 #root {
-  min-height: 100svh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+/* ─── 앱 셸 ───
+   모바일: 가장자리까지 꽉 찬 전체 화면.
+   데스크톱(≥768px): 가운데 정렬된 기기 프레임. */
+.phone-shell {
+  flex: 1;
+  display: flex;
+  background: var(--color-ivory);
+}
+
+.phone-shell__screen {
+  flex: 1;
+  min-width: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-ivory);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (min-width: 768px) {
+  .phone-shell {
+    align-items: center;
+    justify-content: center;
+    padding: 28px 16px;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, #c8c0ad 0%, #b0a894 40%, #9e9688 100%);
+  }
+
+  .phone-shell__screen {
+    flex: 0 0 auto;
+    width: 420px;
+    height: min(880px, calc(100dvh - 56px));
+    border-radius: 38px;
+    padding-top: 0;
+    padding-bottom: 0;
+    box-shadow:
+      0 40px 80px -20px rgba(0, 0, 0, 0.4),
+      0 8px 24px -8px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      0 0 0 1px rgba(255, 255, 255, 0.15);
+  }
 }
 
 * {

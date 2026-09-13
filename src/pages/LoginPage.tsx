@@ -39,7 +39,7 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="relative z-10 flex-1 flex flex-col justify-between px-7 py-10">
+      <div className="relative z-10 flex-1 overflow-y-auto flex flex-col justify-between px-7 py-10">
         {/* Brand */}
         <div className="mt-8 text-center">
           <p

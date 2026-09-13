@@ -49,7 +49,7 @@ export default function OnboardingPage() {
         }}
       />
 
-      <div className="relative z-10 flex-1 flex flex-col justify-between px-7 py-14">
+      <div className="relative z-10 flex-1 overflow-y-auto flex flex-col justify-between px-7 py-14">
         {/* Header */}
         <div>
           <div
