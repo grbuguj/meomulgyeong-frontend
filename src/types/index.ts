@@ -38,7 +38,7 @@ export interface PlaceItem {
   id: string;
   regionId: string;
   name: string;
-  category: "attraction" | "food" | "stay" | "experience";
+  category: "attraction" | "food" | "stay" | "experience" | "transit";
   time: string;
   description: string;
   imageUrl?: string | null;

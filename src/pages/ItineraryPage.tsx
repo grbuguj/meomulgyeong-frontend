@@ -24,6 +24,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   food: "식사",
   experience: "체험",
   stay: "휴식",
+  transit: "이동",
 };
 
 const CATEGORY_STYLE: Record<string, { bg: string; text: string }> = {
@@ -31,6 +32,7 @@ const CATEGORY_STYLE: Record<string, { bg: string; text: string }> = {
   food: { bg: "var(--color-amber-soft)", text: "#b96210" },
   experience: { bg: "#ede8fb", text: "#6b3ec9" },
   stay: { bg: "var(--color-ivory-warm)", text: "var(--color-ink-muted)" },
+  transit: { bg: "var(--color-ivory-warm)", text: "var(--color-ink-muted)" },
 };
 
 export default function ItineraryPage() {
@@ -340,7 +342,7 @@ export default function ItineraryPage() {
                     {item.description}
                   </p>
                 </div>
-                {(item.replaceable ?? item.category !== "stay") && (
+                {(item.replaceable ?? (item.category !== "stay" && item.category !== "transit")) && (
                   <button
                     onClick={() => handleSwap(item.id)}
                     disabled={!!swapping}

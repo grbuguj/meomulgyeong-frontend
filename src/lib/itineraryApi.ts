@@ -146,9 +146,9 @@ const ITEM_CATEGORY_MAP: Record<BackendItemType, PlaceItem["category"]> = {
   FESTIVAL: "attraction",
   RESTAURANT: "food",
   EXPERIENCE: "experience",
-  ARRIVAL: "stay",
+  ARRIVAL: "transit",
   REST: "stay",
-  DEPARTURE: "stay",
+  DEPARTURE: "transit",
 };
 
 /** 백엔드는 시간 필드를 주지 않으므로 sequence로 09:00부터 2시간 간격을 추정한다. */
@@ -168,11 +168,22 @@ const WEATHER_CONDITION_LABELS: Record<string, string> = {
   SNOW: "눈",
 };
 
+/**
+ * 도착/휴식/출발은 실제 장소가 아니라 일정 구성용 자리채움 항목이라
+ * 백엔드가 title에 "ARRIVAL"/"REST"/"DEPARTURE" 영문 상수를 그대로 내려준다.
+ * 실제 장소(관광/식사/체험/축제)는 백엔드 title(장소명)을 그대로 쓴다.
+ */
+const PLACEHOLDER_ITEM_LABELS: Partial<Record<BackendItemType, string>> = {
+  ARRIVAL: "지역 도착",
+  REST: "자유 시간",
+  DEPARTURE: "지역 출발",
+};
+
 function toFrontendItem(item: ItineraryItemResponse, regionId: string): PlaceItem {
   return {
     id: String(item.itemId),
     regionId,
-    name: item.title,
+    name: PLACEHOLDER_ITEM_LABELS[item.type] ?? item.title,
     category: ITEM_CATEGORY_MAP[item.type] ?? "stay",
     time: sequenceToTime(item.sequence),
     description: item.reason ?? "",
