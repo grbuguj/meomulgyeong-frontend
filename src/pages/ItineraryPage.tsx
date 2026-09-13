@@ -18,6 +18,7 @@ import {
   toTripCompletion,
 } from "../lib/itineraryApi";
 import { ApiError } from "../lib/apiClient";
+import { toISODate, today } from "../lib/date";
 
 const CATEGORY_LABEL: Record<string, string> = {
   attraction: "관광",
@@ -46,6 +47,9 @@ export default function ItineraryPage() {
   const companionParam = params.get("companion") ?? "SOLO";
   const backendRegionId = Number(params.get("backendRegionId") ?? 0);
   const preferenceTags = (params.get("tags") ?? "").split(",").filter(Boolean);
+  // 캘린더에서 날짜를 고르고 온 경우에만 startDate가 붙는다(예: 지역상세 "일정 만들기"는 아직 없음).
+  // 없으면 오늘 날짜로 시작하는 것으로 취급한다.
+  const startDateParam = params.get("startDate") ?? toISODate(today());
 
   const [itin, setItin] = useState<Itinerary | null>(null);
   const [backendItineraryId, setBackendItineraryId] = useState<number | null>(null);
@@ -79,7 +83,7 @@ export default function ItineraryPage() {
           regionId: backendRegionId,
           companionType: toBackendCompanion(companionParam),
           nights,
-          startDate: new Date().toISOString().split("T")[0], // 오늘 날짜 기본값
+          startDate: startDateParam,
           preferenceTags,
         }).then((res) => getItinerary(res.itineraryId));
 

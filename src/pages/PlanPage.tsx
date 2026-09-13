@@ -6,6 +6,7 @@ import TagChip from "../components/TagChip";
 import Button from "../components/Button";
 import RegionCard from "../components/RegionCard";
 import StepDots from "../components/StepDots";
+import DateRangeCalendar from "../components/DateRangeCalendar";
 import { REGIONS } from "../data/regions";
 import type { Region } from "../types";
 import { useApp } from "../store/AppContext";
@@ -17,6 +18,7 @@ import {
   type TravelOptionsResponse,
 } from "../lib/recommendationApi";
 import { ApiError } from "../lib/apiClient";
+import { diffDays, formatKoreanDate, parseISODate } from "../lib/date";
 
 // 태그 코드(백엔드 PreferenceTag) → 이모지. travel-options가 신규 코드를 내려도
 // 안 깨지도록 기본 이모지로 폴백한다.
@@ -87,8 +89,8 @@ export default function PlanPage() {
   const [optionsError, setOptionsError] = useState<string | null>(null);
 
   const [tagCodes, setTagCodes] = useState<string[]>([]);
-  const [nights, setNights] = useState<number>(2);
-  const [customNights, setCustomNights] = useState("");
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
   const [companionCode, setCompanionCode] = useState<string | null>(null);
 
   const [results, setResults] = useState<RegionRecommendation[]>([]);
@@ -98,21 +100,14 @@ export default function PlanPage() {
   // 화면 진입 시 여행 조건 옵션(태그/동행/체류일 범위)을 서버에서 받아온다 — 공개 API
   useEffect(() => {
     getTravelOptions()
-      .then((res) => {
-        setOptions(res);
-        setNights(res.stayDuration.minimumNights);
-      })
+      .then((res) => setOptions(res))
       .catch((e) => setOptionsError(e instanceof ApiError ? e.message : "여행 조건을 불러오지 못했어요."));
   }, []);
 
   const stepIndex = STEPS.find((s) => s.key === step)?.index ?? 0;
   const maxTags = options?.preferenceSelection.maximum ?? 3;
-  const nightOptions = options
-    ? Array.from(
-        { length: Math.min(options.stayDuration.maximumNights, 7) - options.stayDuration.minimumNights + 1 },
-        (_, i) => options.stayDuration.minimumNights + i
-      )
-    : [1, 2, 3, 4, 5, 6, 7];
+  const maxNights = Math.min(options?.stayDuration.maximumNights ?? 7, 7);
+  const nights = startDate && endDate ? diffDays(parseISODate(startDate), parseISODate(endDate)) : 0;
 
   const toggleTag = (code: string) => {
     setTagCodes((prev) => {
@@ -145,7 +140,8 @@ export default function PlanPage() {
   const reset = () => {
     setStep("tags");
     setTagCodes([]);
-    setNights(options?.stayDuration.minimumNights ?? 2);
+    setStartDate(null);
+    setEndDate(null);
     setCompanionCode(null);
     setResults([]);
     setMatchError(null);
@@ -227,7 +223,7 @@ export default function PlanPage() {
           </div>
         )}
 
-        {/* ── STEP 2: 박수 선택 ── */}
+        {/* ── STEP 2: 날짜 선택 ── */}
         {step === "nights" && (
           <div className="animate-in">
             <h2
@@ -240,67 +236,53 @@ export default function PlanPage() {
               className="text-[13px] mb-5 font-medium"
               style={{ color: "var(--color-ink-soft)" }}
             >
-              {options?.stayDuration.minimumNights ?? 1}박부터 {options?.stayDuration.maximumNights ?? 7}박까지 선택할 수 있어요
+              체크인·체크아웃 날짜를 골라주세요 · 최대 {maxNights}박까지
             </p>
-            <div className="grid grid-cols-4 gap-2">
-              {nightOptions.map((n) => {
-                const isActive = nights === n && !customNights;
-                return (
-                  <button
-                    key={n}
-                    onClick={() => {
-                      setNights(n);
-                      setCustomNights("");
-                    }}
-                    className="py-4 rounded-2xl text-[14px] font-bold tap"
-                    style={
-                      isActive
-                        ? {
-                            background: "linear-gradient(135deg, #3b82f6, var(--color-accent-dark))",
-                            color: "white",
-                            boxShadow: "0 6px 18px -6px rgba(43,108,224,0.52)",
-                          }
-                        : {
-                            background: "white",
-                            color: "var(--color-ink)",
-                            boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 6px 16px -8px rgba(28,26,22,0.08)",
-                          }
-                    }
-                  >
-                    {n}박
-                  </button>
-                );
-              })}
+
+            <div
+              className="rounded-[22px] p-4 mb-4"
+              style={{
+                background: "white",
+                boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.09)",
+              }}
+            >
+              <DateRangeCalendar
+                startDate={startDate}
+                endDate={endDate}
+                maxNights={maxNights}
+                onChange={(next) => {
+                  setStartDate(next.startDate);
+                  setEndDate(next.endDate);
+                }}
+              />
             </div>
-            {options && options.stayDuration.maximumNights > 7 && (
-              <div className="mt-5">
-                <p
-                  className="text-[13px] mb-2 font-semibold"
-                  style={{ color: "var(--color-ink-soft)" }}
-                >
-                  8박 이상 머무르시나요?
+
+            <div
+              className="rounded-2xl px-4 py-3.5 mb-6 text-center"
+              style={{ background: "var(--color-accent-soft)" }}
+            >
+              {startDate && endDate ? (
+                <p className="text-[13.5px] font-bold" style={{ color: "var(--color-accent-dark)" }}>
+                  {formatKoreanDate(parseISODate(startDate))} → {formatKoreanDate(parseISODate(endDate))} ·{" "}
+                  {nights}박 {nights + 1}일
                 </p>
-                <input
-                  type="number"
-                  min={8}
-                  max={options.stayDuration.maximumNights}
-                  value={customNights}
-                  onChange={(e) => {
-                    setCustomNights(e.target.value);
-                    if (e.target.value) setNights(Number(e.target.value));
-                  }}
-                  placeholder="직접 입력 (예: 10)"
-                  className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none font-semibold"
-                  style={{
-                    background: "white",
-                    color: "var(--color-ink)",
-                    border: "1.5px solid var(--color-line)",
-                    boxShadow: "0 1px 2px rgba(28,26,22,0.04)",
-                  }}
-                />
-              </div>
-            )}
-            <Button fullWidth variant="accent" className="mt-10" onClick={() => setStep("companion")}>
+              ) : startDate ? (
+                <p className="text-[13px] font-semibold" style={{ color: "var(--color-accent-dark)" }}>
+                  체크인 {formatKoreanDate(parseISODate(startDate))} · 체크아웃 날짜를 골라주세요
+                </p>
+              ) : (
+                <p className="text-[13px] font-semibold" style={{ color: "var(--color-ink-soft)" }}>
+                  체크인 날짜부터 골라주세요
+                </p>
+              )}
+            </div>
+
+            <Button
+              fullWidth
+              variant="accent"
+              disabled={!startDate || !endDate}
+              onClick={() => setStep("companion")}
+            >
               다음 →
             </Button>
           </div>
@@ -400,7 +382,7 @@ export default function PlanPage() {
                 reason={rec.recommendationReason}
                 onClick={() =>
                   navigate(
-                    `/itinerary/${toDisplayRegion(rec).id}?nights=${nights}&companion=${companionCode}&backendRegionId=${rec.regionId}&tags=${encodeURIComponent(tagCodes.join(","))}`
+                    `/itinerary/${toDisplayRegion(rec).id}?nights=${nights}&companion=${companionCode}&backendRegionId=${rec.regionId}&tags=${encodeURIComponent(tagCodes.join(","))}&startDate=${startDate}`
                   )
                 }
               />
