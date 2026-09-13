@@ -123,7 +123,12 @@ export default function TripResultPage() {
           생활인구 산입 일수는 행정안전부 「인구감소지역 지원 특별법」 시행령상 체류 기준을 적용했습니다.
         </p>
 
-        <Button variant="accent" fullWidth className="mt-6" onClick={() => navigate("/my")}>
+        <Button
+          variant="accent"
+          fullWidth
+          className="mt-6"
+          onClick={() => navigate("/my", { state: { scrollTo: "completed" } })}
+        >
           마이페이지에서 확인하기
         </Button>
       </div>

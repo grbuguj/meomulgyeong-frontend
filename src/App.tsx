@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import HomePage from "./pages/HomePage";
+import PlanPage from "./pages/PlanPage";
 import ItineraryPage from "./pages/ItineraryPage";
 import ExplorePage from "./pages/ExplorePage";
 import RegionDetailPage from "./pages/RegionDetailPage";
@@ -33,6 +34,14 @@ function AppRoutes() {
         element={
           <Gate>
             <HomePage />
+          </Gate>
+        }
+      />
+      <Route
+        path="/plan"
+        element={
+          <Gate>
+            <PlanPage />
           </Gate>
         }
       />

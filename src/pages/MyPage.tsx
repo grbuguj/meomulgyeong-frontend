@@ -1,10 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import RegionArt from "../components/RegionArt";
 import { REGIONS, REGION_MAP } from "../data/regions";
 import { useApp } from "../store/AppContext";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import { ApiError } from "../lib/apiClient";
@@ -12,6 +12,9 @@ import { ApiError } from "../lib/apiClient";
 export default function MyPage() {
   const { user, savedItineraries, removeSavedItinerary, logout, updateNickname } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
+  const savedSectionRef = useRef<HTMLDivElement>(null);
+  const completedSectionRef = useRef<HTMLDivElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [editingNickname, setEditingNickname] = useState(false);
@@ -50,6 +53,14 @@ export default function MyPage() {
   };
 
   const stampPct = Math.round((user.stamps.length / 15) * 100);
+
+  // 허브 화면의 "저장한 일정 보기" / "지난 여행 보기" 카드에서 넘어오면 해당 섹션으로 스크롤한다.
+  useEffect(() => {
+    const scrollTo = (location.state as { scrollTo?: "saved" | "completed" } | null)?.scrollTo;
+    const target = scrollTo === "saved" ? savedSectionRef.current : scrollTo === "completed" ? completedSectionRef.current : null;
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   return (
     <>
@@ -154,7 +165,7 @@ export default function MyPage() {
         </div>
 
         {/* 저장한 일정 */}
-        <div className="px-5 mt-7">
+        <div ref={savedSectionRef} className="px-5 mt-7">
           <p
             className="text-[14px] font-bold mb-3"
             style={{ color: "var(--color-ink)" }}
@@ -242,7 +253,7 @@ export default function MyPage() {
 
         {/* 완료한 여행 */}
         {user.trips.length > 0 && (
-          <div className="px-5 mt-7">
+          <div ref={completedSectionRef} className="px-5 mt-7">
             <p
               className="text-[14px] font-bold mb-3"
               style={{ color: "var(--color-ink)" }}
