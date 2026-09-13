@@ -1,4 +1,4 @@
-import type { Itinerary, TripCompletion } from "../types";
+import type { Itinerary } from "../types";
 
 // 한국관광공사 「국민여행조사」 1인 1일 평균 지출액(숙박·식음료·체험활동) 참고 — mock 단가
 const PER_DAY_SPEND = {
@@ -24,15 +24,5 @@ export function calcContribution(itinerary: Itinerary, visitors: number) {
     stayHours,
     estimatedSpend,
     livingPopulationDays,
-  };
-}
-
-export function makeTripCompletion(itinerary: Itinerary, visitors: number): TripCompletion {
-  return {
-    itineraryId: itinerary.id,
-    regionId: itinerary.regionId,
-    visitedDays: itinerary.days.length,
-    visitors,
-    completedAt: new Date().toISOString(),
   };
 }

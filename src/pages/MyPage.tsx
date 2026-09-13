@@ -18,6 +18,21 @@ export default function MyPage() {
   const [nicknameDraft, setNicknameDraft] = useState(user.nickname);
   const [savingNickname, setSavingNickname] = useState(false);
   const [nicknameError, setNicknameError] = useState<string | null>(null);
+  const [removingItineraryId, setRemovingItineraryId] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  const handleRemoveItinerary = async (itinId: string, backendItineraryId?: number) => {
+    if (removingItineraryId) return;
+    setRemovingItineraryId(itinId);
+    setRemoveError(null);
+    try {
+      await removeSavedItinerary(itinId, backendItineraryId);
+    } catch (e) {
+      setRemoveError(e instanceof ApiError ? e.message : "저장 일정을 삭제하지 못했어요.");
+    } finally {
+      setRemovingItineraryId(null);
+    }
+  };
 
   const saveNickname = async () => {
     const value = nicknameDraft.trim();
@@ -146,6 +161,11 @@ export default function MyPage() {
           >
             저장한 일정 ({savedItineraries.length})
           </p>
+          {removeError && (
+            <p className="text-[12px] font-semibold mb-2" style={{ color: "#c2410c" }}>
+              {removeError}
+            </p>
+          )}
           {savedItineraries.length === 0 && (
             <div
               className="rounded-2xl p-4 text-center"
@@ -205,11 +225,12 @@ export default function MyPage() {
                         보기
                       </button>
                       <button
-                        onClick={() => removeSavedItinerary(itin.id)}
+                        onClick={() => handleRemoveItinerary(itin.id, itin.backendItineraryId)}
+                        disabled={removingItineraryId === itin.id}
                         className="text-[12px] font-bold tap"
                         style={{ color: "var(--color-ink-faint)" }}
                       >
-                        삭제
+                        {removingItineraryId === itin.id ? "삭제 중…" : "삭제"}
                       </button>
                     </div>
                   </div>

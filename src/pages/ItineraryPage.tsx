@@ -4,7 +4,6 @@ import TopBar from "../components/TopBar";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import { REGION_MAP } from "../data/regions";
-import { makeTripCompletion } from "../lib/contribution";
 import type { Itinerary } from "../types";
 import { useApp } from "../store/AppContext";
 import {
@@ -54,10 +53,12 @@ export default function ItineraryPage() {
   const [completeModal, setCompleteModal] = useState(false);
   const [visitors, setVisitors] = useState(1);
   const [stayDays, setStayDays] = useState(1);
+  const [totalSpent, setTotalSpent] = useState(0);
   const [swapping, setSwapping] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const created = useRef(false);
 
@@ -139,12 +140,13 @@ export default function ItineraryPage() {
   const handleSwap = async (itemId: string) => {
     if (!backendItineraryId || swapping) return;
     setSwapping(itemId);
+    setActionError(null);
     try {
       const res = await replaceItineraryItem(backendItineraryId, Number(itemId));
       const updated = await getItinerary(res.itineraryId);
       setItin(toFrontendItinerary(updated, regionId!));
-    } catch {
-      // 교체 실패는 UI에서 조용히 처리 — 아이템이 그대로 남는다
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : "장소를 교체하지 못했어요. 다시 시도해주세요.");
     } finally {
       setSwapping(null);
     }
@@ -153,12 +155,13 @@ export default function ItineraryPage() {
   const handleRegenerateAll = async () => {
     if (!backendItineraryId || regenerating) return;
     setRegenerating(true);
+    setActionError(null);
     try {
       const res = await regenerateFullItinerary(backendItineraryId);
       setItin(toFrontendItinerary(res, regionId!));
       setActiveDay(1);
-    } catch {
-      // 재생성 실패는 조용히 처리
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : "일정을 다시 만들지 못했어요. 다시 시도해주세요.");
     } finally {
       setRegenerating(false);
     }
@@ -168,12 +171,12 @@ export default function ItineraryPage() {
     if (!backendItineraryId) return;
     if (isSaved) return;
     setBookmarkLoading(true);
+    setActionError(null);
     try {
       await bookmarkItinerary(backendItineraryId);
       saveItinerary(itin);
-    } catch {
-      // 북마크 실패 시에도 로컬 저장은 시도
-      saveItinerary(itin);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : "일정을 저장하지 못했어요. 다시 시도해주세요.");
     } finally {
       setBookmarkLoading(false);
     }
@@ -182,11 +185,12 @@ export default function ItineraryPage() {
   const handleComplete = async () => {
     if (!backendItineraryId || completing) return;
     setCompleting(true);
+    setActionError(null);
     try {
       const res = await completeItinerary(backendItineraryId, {
         stayHours: stayDays * 24,
         partySize: visitors,
-        totalSpent: 0,
+        totalSpent,
       });
       const trip = toTripCompletion(res, regionId!, stayDays, visitors);
       completeTrip(trip);
@@ -194,14 +198,11 @@ export default function ItineraryPage() {
       navigate(`/trip-result/${user.trips.length}`, {
         state: { trip, itinerary: itin },
       });
-    } catch {
-      // TODO: 백엔드 실제 스펙 확인 필요 — 완료 API 실패 시 로컬 완료 처리 폴백 여부 결정
-      const trip = makeTripCompletion({ ...itin, days: itin.days.slice(0, stayDays) }, visitors);
-      completeTrip(trip);
-      setCompleteModal(false);
-      navigate(`/trip-result/${user.trips.length}`, {
-        state: { trip, itinerary: itin },
-      });
+    } catch (e) {
+      // 서버 등록이 실패하면 완료로 처리하지 않는다 — 로컬만 완료 표시하면 기록이 사라진다.
+      setActionError(
+        e instanceof ApiError ? e.message : "여행 완료를 등록하지 못했어요. 다시 시도해주세요."
+      );
     } finally {
       setCompleting(false);
     }
@@ -271,12 +272,29 @@ export default function ItineraryPage() {
                 Day {d.day}
                 <br />
                 <span className="font-semibold opacity-90">
-                  {d.weather.temp}° {d.weather.condition}
+                  {d.weather.temp !== null && `${d.weather.temp}° `}
+                  {d.weather.condition ?? "날씨 미정"}
                 </span>
               </button>
             );
           })}
         </div>
+
+        {itin.warnings?.map((warning) => (
+          <div
+            key={warning.code}
+            className="mx-5 mt-3 rounded-2xl px-4 py-3 text-[12px] font-semibold"
+            style={{ background: "var(--color-amber-soft)", color: "#b96210" }}
+          >
+            {warning.message}
+          </div>
+        ))}
+
+        {actionError && (
+          <p className="px-5 mt-3 text-[12px] font-semibold" style={{ color: "#c2410c" }}>
+            {actionError}
+          </p>
+        )}
 
         {/* Timeline */}
         <div className="px-5 mt-4 space-y-2.5">
@@ -322,7 +340,7 @@ export default function ItineraryPage() {
                     {item.description}
                   </p>
                 </div>
-                {item.category !== "stay" && (
+                {(item.replaceable ?? item.category !== "stay") && (
                   <button
                     onClick={() => handleSwap(item.id)}
                     disabled={!!swapping}
@@ -403,6 +421,31 @@ export default function ItineraryPage() {
               }}
             />
           </div>
+          <div>
+            <label
+              className="text-[12px] font-bold block mb-1.5"
+              style={{ color: "var(--color-ink-soft)" }}
+            >
+              쓴 금액 (원)
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={totalSpent}
+              onChange={(e) => setTotalSpent(Math.max(Number(e.target.value), 0))}
+              className="w-full rounded-2xl px-4 py-3 outline-none font-semibold"
+              style={{
+                background: "var(--color-ivory-warm)",
+                color: "var(--color-ink)",
+              }}
+            />
+          </div>
+          {actionError && (
+            <p className="text-[12px] font-semibold" style={{ color: "#c2410c" }}>
+              {actionError}
+            </p>
+          )}
           <Button variant="accent" fullWidth onClick={handleComplete} disabled={completing}>
             {completing ? "처리 중…" : "지역 기여도 확인하기"}
           </Button>

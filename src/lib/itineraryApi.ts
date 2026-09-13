@@ -33,12 +33,20 @@ export interface ItineraryItemResponse {
   type: BackendItemType;
   title: string;
   reason: string | null;
+  placeId: number | null;
+  festivalId: number | null;
+  imageUrl: string | null;
+  address: string | null;
+  eventStartDate: string | null;
+  eventEndDate: string | null;
+  replaceable: boolean;
 }
 
 export interface ItineraryDayResponse {
   dayNumber: number;
   date: string; // "YYYY-MM-DD"
   weather: {
+    available: boolean;
     condition: string | null;
     minimumTemperature: number | null;
     maximumTemperature: number | null;
@@ -52,9 +60,25 @@ export interface ItineraryResponse {
   companionType: BackendCompanionType;
   nights: number;
   startDate: string;
+  endDate: string;
+  title: string;
   status: string;
   bookmarked: boolean;
+  generationVersion: number;
   days: ItineraryDayResponse[];
+  warnings?: { code: string; message: string }[];
+}
+
+/** 저장 일정 목록 응답 — 상세(days)를 포함하지 않는 요약본이다. */
+export interface BookmarkedItinerarySummary {
+  itineraryId: number;
+  region: { regionId: number; regionName: string };
+  title: string;
+  startDate: string;
+  endDate: string;
+  nights: number;
+  status: string;
+  bookmarkedAt: string;
 }
 
 export interface ReplaceItemRequest {
@@ -78,6 +102,21 @@ export interface CompleteItineraryResponse {
   completedTripId: number;
   itineraryId: number;
   region: { regionId: number; regionName: string };
+  stayHours: number;
+  partySize: number;
+  totalSpent: number;
+  stamp: {
+    awarded: boolean;
+    newlyAwarded: boolean;
+    regionId: number;
+    regionName: string;
+    visitCount: number;
+  };
+  contribution: {
+    populationContributionDays: number | null;
+    calculationStatus: string;
+    calculationPolicyVersion: string;
+  };
   completedAt: string;
 }
 
@@ -112,15 +151,21 @@ const ITEM_CATEGORY_MAP: Record<BackendItemType, PlaceItem["category"]> = {
   DEPARTURE: "stay",
 };
 
-// TODO: 백엔드 실제 스펙 확인 필요 — 백엔드가 시간 필드를 주지 않으면 sequence_no 기반 추정값을 사용
-const SEQUENCE_TIMES: Record<number, string> = {
-  1: "09:00",
-  2: "11:00",
-  3: "13:00",
-  4: "15:00",
-  5: "17:00",
-  6: "19:00",
-  7: "21:00",
+/** 백엔드는 시간 필드를 주지 않으므로 sequence로 09:00부터 2시간 간격을 추정한다. */
+function sequenceToTime(sequence: number): string {
+  const hour = Math.min(9 + (Math.max(sequence, 1) - 1) * 2, 23);
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+/** 백엔드 날씨 열거값 → 한국어 라벨 */
+const WEATHER_CONDITION_LABELS: Record<string, string> = {
+  SUNNY: "맑음",
+  PARTLY_CLOUDY: "구름 조금",
+  CLOUDY: "흐림",
+  RAIN: "비",
+  SHOWER: "소나기",
+  SLEET: "진눈깨비",
+  SNOW: "눈",
 };
 
 function toFrontendItem(item: ItineraryItemResponse, regionId: string): PlaceItem {
@@ -129,17 +174,23 @@ function toFrontendItem(item: ItineraryItemResponse, regionId: string): PlaceIte
     regionId,
     name: item.title,
     category: ITEM_CATEGORY_MAP[item.type] ?? "stay",
-    time: SEQUENCE_TIMES[item.sequence] ?? "09:00",
+    time: sequenceToTime(item.sequence),
     description: item.reason ?? "",
+    imageUrl: item.imageUrl,
+    address: item.address,
+    replaceable: item.replaceable,
   };
 }
 
 function toFrontendDay(day: ItineraryDayResponse, regionId: string): DayPlan {
+  const condition = day.weather.condition;
   return {
     day: day.dayNumber,
     date: day.date,
-    // TODO: 백엔드 실제 스펙 확인 필요 — 날씨 정보 제공 여부. 현재는 placeholder
-    weather: { temp: day.weather.maximumTemperature ?? 23, condition: day.weather.condition ?? "정보 없음" },
+    weather: {
+      temp: day.weather.maximumTemperature,
+      condition: condition ? WEATHER_CONDITION_LABELS[condition] ?? condition : null,
+    },
     items: day.items.map((it) => toFrontendItem(it, regionId)),
   };
 }
@@ -169,6 +220,7 @@ export function toFrontendItinerary(res: ItineraryResponse, frontendRegionId: st
     nights: res.nights,
     companion: companionLegacyMap[res.companionType] ?? "alone",
     days: res.days.map((d) => toFrontendDay(d, frontendRegionId)),
+    warnings: res.warnings,
   };
 }
 
@@ -236,12 +288,32 @@ export async function completeItinerary(
   });
 }
 
-/** 8. 내 저장 일정 목록 조회. 서버는 목록 요약만 반환하므로 상세를 이어서 조회한다. */
-export async function listBookmarkedItineraries(): Promise<ItineraryResponse[]> {
-  const bookmarks = await apiFetch<{ itineraries: { itineraryId: number }[] }>(
+/**
+ * 8. 내 저장 일정 목록 조회.
+ * 목록 응답에 지역·기간이 모두 들어있으므로 상세를 추가로 조회하지 않는다.
+ * 일자별 상세는 목록에서 항목을 열 때 getItinerary로 가져온다.
+ */
+export async function listBookmarkedItineraries(): Promise<BookmarkedItinerarySummary[]> {
+  const bookmarks = await apiFetch<{ itineraries: BookmarkedItinerarySummary[] }>(
     "/api/users/me/bookmarked-itineraries",
   );
-  return Promise.all(bookmarks.itineraries.map(({ itineraryId }) => getItinerary(itineraryId)));
+  return bookmarks.itineraries;
+}
+
+/** 저장 일정 요약 → 프론트엔드 Itinerary (일자별 상세는 열람 시점에 조회한다) */
+export function toFrontendItinerarySummary(
+  summary: BookmarkedItinerarySummary,
+  frontendRegionId: string
+): Itinerary {
+  return {
+    id: String(summary.itineraryId),
+    regionId: frontendRegionId,
+    backendItineraryId: summary.itineraryId,
+    nights: summary.nights,
+    companion: "alone",
+    days: [],
+    savedAt: summary.bookmarkedAt,
+  };
 }
 
 /** 완료 응답으로 TripCompletion 객체 생성 */
@@ -257,5 +329,10 @@ export function toTripCompletion(
     visitedDays,
     visitors,
     completedAt: res.completedAt,
+    contribution: {
+      stayHours: res.stayHours,
+      reportedSpending: res.totalSpent,
+      populationContributionDays: res.contribution.populationContributionDays,
+    },
   };
 }

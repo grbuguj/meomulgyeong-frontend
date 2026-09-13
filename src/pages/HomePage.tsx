@@ -62,6 +62,7 @@ function toDisplayRegion(rec: RegionRecommendation): Region {
 
   return {
     id: `api-${rec.regionId}`,
+    backendId: rec.regionId,
     name: rec.regionName,
     shortName: rec.regionName,
     identityLine: rec.identityStatement,

@@ -30,8 +30,8 @@ export interface Region {
   heroImage?: string; // real photo URL (optional fallback to SVG art)
   isVerifiedHub: boolean; // 안동 대표 검증 거점 여부
   representativeSpots: string[];
-  // TODO: 백엔드 실제 스펙 확인 필요 — 백엔드 region_id 확정 후 regions.ts에 채워야 함
-  backendId?: number;
+  /** 백엔드 region_id. 일정 생성 API가 이 값을 요구하므로 모든 지역에 채워져 있어야 한다. */
+  backendId: number;
 }
 
 export interface PlaceItem {
@@ -41,12 +41,16 @@ export interface PlaceItem {
   category: "attraction" | "food" | "stay" | "experience";
   time: string;
   description: string;
+  imageUrl?: string | null;
+  address?: string | null;
+  /** 서버가 판단한 교체 가능 여부. 없으면 카테고리로 추론한다. */
+  replaceable?: boolean;
 }
 
 export interface DayPlan {
   day: number;
   date: string;
-  weather: { temp: number; condition: string };
+  weather: { temp: number | null; condition: string | null };
   items: PlaceItem[];
 }
 
@@ -59,6 +63,18 @@ export interface Itinerary {
   companion: CompanionType;
   days: DayPlan[];
   savedAt?: string;
+  /** 서버가 내려준 경고(예: 축제 데이터 없음). 사용자에게 그대로 노출한다. */
+  warnings?: { code: string; message: string }[];
+}
+
+/** 서버가 계산한 지역 기여도. 없으면 프론트가 추정치를 계산한다. */
+export interface TripContribution {
+  stayHours: number;
+  /** 사용자가 입력한 실제 지출. 완료 등록 응답에만 있다. */
+  reportedSpending?: number;
+  /** 서버가 산출한 예상 소비. 마이페이지 완료여행 목록에만 있다. */
+  estimatedSpending?: number;
+  populationContributionDays: number | null;
 }
 
 export interface TripCompletion {
@@ -67,6 +83,7 @@ export interface TripCompletion {
   visitedDays: number;
   visitors: number;
   completedAt: string;
+  contribution?: TripContribution;
 }
 
 export interface UserProfile {

@@ -4,6 +4,7 @@ import RegionArt from "../components/RegionArt";
 import Button from "../components/Button";
 import { REGION_MAP } from "../data/regions";
 import { TAG_MAP } from "../data/tags";
+import { toPreferenceTags } from "../lib/recommendationApi";
 import { useApp } from "../store/AppContext";
 
 export default function RegionDetailPage() {
@@ -160,8 +161,11 @@ export default function RegionDetailPage() {
           variant="accent"
           fullWidth
           onClick={() => {
-            const base = `/itinerary/${region.id}?nights=2&companion=SOLO`;
-            navigate(region.backendId ? `${base}&backendRegionId=${region.backendId}` : base);
+            const tags = toPreferenceTags(region.tags);
+            navigate(
+              `/itinerary/${region.id}?nights=2&companion=SOLO&backendRegionId=${region.backendId}` +
+                `&tags=${encodeURIComponent(tags.join(","))}`
+            );
           }}
         >
           이 지역으로 일정 만들기

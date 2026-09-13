@@ -20,10 +20,16 @@ export default function TripResultPage() {
 
   const { trip, itinerary } = state;
   const region = REGION_MAP[trip.regionId];
-  const result = calcContribution(
+  // 서버가 계산한 값이 있으면 그대로 쓰고, 없을 때만 프론트 추정치로 채운다.
+  const estimated = calcContribution(
     { ...itinerary, days: itinerary.days.slice(0, trip.visitedDays) },
     trip.visitors
   );
+  const server = trip.contribution;
+  const isServerCalculated = server != null;
+  const stayHours = server?.stayHours ?? estimated.stayHours;
+  const spend = server?.estimatedSpending ?? server?.reportedSpending ?? estimated.estimatedSpend;
+  const populationDays = server?.populationContributionDays ?? estimated.livingPopulationDays;
 
   return (
     <>
@@ -47,15 +53,15 @@ export default function TripResultPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          <StatTile label="방문 지역" value={result.visitedRegions} unit={`/ 15곳`} tone="accent" accent />
-          <StatTile label="누적 체류시간" value={result.stayHours} unit="시간" tone="mint" />
+          <StatTile label="방문 지역" value={estimated.visitedRegions} unit={`/ 15곳`} tone="accent" accent />
+          <StatTile label="누적 체류시간" value={stayHours} unit="시간" tone="mint" />
           <StatTile
-            label="예상 지역 소비"
-            value={(result.estimatedSpend / 10000).toFixed(1)}
+            label={isServerCalculated ? "지역 소비" : "예상 지역 소비"}
+            value={(spend / 10000).toFixed(1)}
             unit="만원"
             tone="amber"
           />
-          <StatTile label="생활인구 산입" value={`+${result.livingPopulationDays}`} unit="일" tone="forest" />
+          <StatTile label="생활인구 산입" value={`+${populationDays}`} unit="일" tone="forest" />
         </div>
 
         {/* Badge grid */}
@@ -111,7 +117,9 @@ export default function TripResultPage() {
           className="text-[10.5px] mt-5 leading-relaxed"
           style={{ color: "var(--color-ink-faint)" }}
         >
-          예상 소비 금액은 한국관광공사 「국민여행조사」 1인 1일 평균 지출액을 기준으로 산출한 추정값입니다.
+          {isServerCalculated
+            ? "체류시간·소비·생활인구 산입 일수는 서버가 실제 여행 기록을 기준으로 산출한 값입니다."
+            : "예상 소비 금액은 한국관광공사 「국민여행조사」 1인 1일 평균 지출액을 기준으로 산출한 추정값입니다."}{" "}
           생활인구 산입 일수는 행정안전부 「인구감소지역 지원 특별법」 시행령상 체류 기준을 적용했습니다.
         </p>
 

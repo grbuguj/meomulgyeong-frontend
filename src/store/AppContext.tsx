@@ -8,7 +8,12 @@ import {
   type MeResponse,
 } from "../lib/authApi";
 import { getAccessToken } from "../lib/apiClient";
-import { listBookmarkedItineraries, resolveFrontendRegionId, toFrontendItinerary } from "../lib/itineraryApi";
+import {
+  listBookmarkedItineraries,
+  resolveFrontendRegionId,
+  toFrontendItinerarySummary,
+  unbookmarkItinerary,
+} from "../lib/itineraryApi";
 import { getCompletedTrips, getMyStamps } from "../lib/myPageApi";
 
 const STORAGE_KEY = "meomulgyeong_state_v1";
@@ -35,7 +40,7 @@ interface AppContextValue extends AppState {
   updateNickname: (nickname: string) => Promise<void>;
   setSelection: (tags: TagKey[], nights: number, companion: CompanionType) => void;
   saveItinerary: (itin: Itinerary) => void;
-  removeSavedItinerary: (itinId: string) => void;
+  removeSavedItinerary: (itinId: string, backendItineraryId?: number) => Promise<void>;
   completeTrip: (trip: TripCompletion) => void;
 }
 
@@ -113,8 +118,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // 서버의 북마크 목록을 로컬 상태에 동기화한다 — 실패해도 로컬 캐시를 유지한다.
       listBookmarkedItineraries()
         .then((serverItins) => {
-          const mapped = serverItins.map((res) =>
-            toFrontendItinerary(res, resolveFrontendRegionId(res.region.regionName, res.region.regionId))
+          const mapped = serverItins.map((summary) =>
+            toFrontendItinerarySummary(
+              summary,
+              resolveFrontendRegionId(summary.region.regionName, summary.region.regionId)
+            )
           );
           setSavedItineraries((prev) => {
             const serverIds = new Set(mapped.map((i) => i.id));
@@ -147,6 +155,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
               visitedDays: trip.nights + 1,
               visitors: trip.partySize,
               completedAt: trip.completedAt,
+              contribution: {
+                stayHours: trip.stayHours,
+                estimatedSpending: trip.estimatedSpending,
+                populationContributionDays: trip.populationContributionDays,
+              },
             })),
           }));
         })
@@ -197,7 +210,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser((u) => ({ ...u, savedItineraries: [...u.savedItineraries, itin.id] }));
   };
 
-  const removeSavedItinerary = (itinId: string) => {
+  /** 서버 북마크를 먼저 해제하고, 성공했을 때만 로컬 목록에서 제거한다. */
+  const removeSavedItinerary = async (itinId: string, backendItineraryId?: number) => {
+    if (backendItineraryId) {
+      await unbookmarkItinerary(backendItineraryId);
+    }
     setSavedItineraries((list) => list.filter((i) => i.id !== itinId));
     setUser((u) => ({ ...u, savedItineraries: u.savedItineraries.filter((id) => id !== itinId) }));
   };

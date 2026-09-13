@@ -49,6 +49,28 @@ export interface RegionRecommendationResponse {
   recommendations: RegionRecommendation[];
 }
 
+/**
+ * 프론트 로컬 태그(TagKey) → 백엔드 PreferenceTag 코드.
+ * "festival"은 대응하는 백엔드 코드가 없어 제외한다.
+ */
+const TAG_KEY_TO_PREFERENCE_TAG: Record<string, string> = {
+  hanok: "HANOK_CONFUCIANISM",
+  nature: "NATURE",
+  sea: "SEA",
+  walk: "WALKING",
+  healing: "HEALING",
+  food: "FOOD",
+  bike: "BICYCLE",
+};
+
+/** 백엔드는 1~3개의 PreferenceTag만 받으므로 변환 후 3개로 자른다. */
+export function toPreferenceTags(tagKeys: readonly string[]): string[] {
+  return tagKeys
+    .map((key) => TAG_KEY_TO_PREFERENCE_TAG[key])
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
 /** 여행 조건 옵션 조회 — 인증 불필요(공개 API) */
 export function getTravelOptions(): Promise<TravelOptionsResponse> {
   return apiFetch<TravelOptionsResponse>("/api/travel-options", { auth: false });

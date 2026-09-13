@@ -3,6 +3,7 @@ import type { Region } from "../types";
 export const REGIONS: Region[] = [
   {
     id: "andong",
+    backendId: 1,
     name: "안동시",
     shortName: "안동",
     identityLine: "한국 유교문화의 살아있는 박물관",
@@ -19,6 +20,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "yeongju",
+    backendId: 2,
     name: "영주시",
     shortName: "영주",
     identityLine: "부석사 무량수전이 지켜온 선비의 고을",
@@ -35,6 +37,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "mungyeong",
+    backendId: 3,
     name: "문경시",
     shortName: "문경",
     identityLine: "옛 고갯길과 철로가 만나는 이야기의 관문",
@@ -51,6 +54,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "sangju",
+    backendId: 4,
     name: "상주시",
     shortName: "상주",
     identityLine: "낙동강 물길이 처음 넓어지는 곳",
@@ -67,6 +71,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "bonghwa",
+    backendId: 5,
     name: "봉화군",
     shortName: "봉화",
     identityLine: "백두대간이 감춰둔 첩첩산중의 쉼표",
@@ -83,6 +88,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "yeongyang",
+    backendId: 6,
     name: "영양군",
     shortName: "영양",
     identityLine: "국내 유일 밤하늘 보호구역이 있는 별의 마을",
@@ -99,6 +105,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "cheongsong",
+    backendId: 7,
     name: "청송군",
     shortName: "청송",
     identityLine: "유네스코가 인정한 지질명소의 고장",
@@ -115,6 +122,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "uiseong",
+    backendId: 8,
     name: "의성군",
     shortName: "의성",
     identityLine: "마늘 향 가득한 흙과 물의 고장",
@@ -131,6 +139,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "cheongdo",
+    backendId: 9,
     name: "청도군",
     shortName: "청도",
     identityLine: "소싸움과 와인이 함께 흐르는 반전의 고을",
@@ -147,6 +156,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "yecheon",
+    backendId: 10,
     name: "예천군",
     shortName: "예천",
     identityLine: "물돌이 마을이 그려낸 자연의 곡선",
@@ -163,6 +173,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "uljin",
+    backendId: 11,
     name: "울진군",
     shortName: "울진",
     identityLine: "동해가 열어준 청정 해양의 관문",
@@ -179,6 +190,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "yeongdeok",
+    backendId: 12,
     name: "영덕군",
     shortName: "영덕",
     identityLine: "해맞이길 따라 대게 향이 흐르는 바다",
@@ -195,6 +207,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "goryeong",
+    backendId: 13,
     name: "고령군",
     shortName: "고령",
     identityLine: "대가야 천년의 고분이 잠든 능선",
@@ -211,6 +224,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "seongju",
+    backendId: 14,
     name: "성주군",
     shortName: "성주",
     identityLine: "가야산 자락이 키워낸 참외의 본향",
@@ -227,6 +241,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: "ulleung",
+    backendId: 15,
     name: "울릉군",
     shortName: "울릉",
     identityLine: "동해 끝 화산섬이 지켜온 원시의 자연",
