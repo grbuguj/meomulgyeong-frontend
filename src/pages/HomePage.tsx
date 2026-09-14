@@ -99,7 +99,7 @@ export default function HomePage() {
                 ? `${savedItineraries.length}개의 일정을 저장했어요`
                 : "저장한 일정이 없어요"
             }
-            onClick={() => navigate("/my", { state: { scrollTo: "saved" } })}
+            onClick={() => navigate("/my/saved")}
           />
           <HubCard
             icon="🗺️"
@@ -109,7 +109,7 @@ export default function HomePage() {
                 ? `${user.trips.length}번의 여행을 완료했어요`
                 : "완료한 여행이 없어요"
             }
-            onClick={() => navigate("/my", { state: { scrollTo: "completed" } })}
+            onClick={() => navigate("/my/trips")}
           />
         </div>
       </div>

@@ -1,10 +1,10 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import RegionArt from "../components/RegionArt";
 import { REGIONS, REGION_MAP } from "../data/regions";
 import { useApp } from "../store/AppContext";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import { ApiError } from "../lib/apiClient";
@@ -12,9 +12,6 @@ import { ApiError } from "../lib/apiClient";
 export default function MyPage() {
   const { user, savedItineraries, removeSavedItinerary, logout, updateNickname } = useApp();
   const navigate = useNavigate();
-  const location = useLocation();
-  const savedSectionRef = useRef<HTMLDivElement>(null);
-  const completedSectionRef = useRef<HTMLDivElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [editingNickname, setEditingNickname] = useState(false);
@@ -54,13 +51,8 @@ export default function MyPage() {
 
   const stampPct = Math.round((user.stamps.length / 15) * 100);
 
-  // 허브 화면의 "저장한 일정 보기" / "지난 여행 보기" 카드에서 넘어오면 해당 섹션으로 스크롤한다.
-  useEffect(() => {
-    const scrollTo = (location.state as { scrollTo?: "saved" | "completed" } | null)?.scrollTo;
-    const target = scrollTo === "saved" ? savedSectionRef.current : scrollTo === "completed" ? completedSectionRef.current : null;
-    target?.scrollIntoView({ behavior: "smooth", block: "start" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]);
+  const recentSavedItineraries = savedItineraries.slice(-2).reverse();
+  const recentTrips = user.trips.slice(-2).reverse();
 
   return (
     <>
@@ -165,13 +157,21 @@ export default function MyPage() {
         </div>
 
         {/* 저장한 일정 */}
-        <div ref={savedSectionRef} className="px-5 mt-7">
-          <p
-            className="text-[14px] font-bold mb-3"
-            style={{ color: "var(--color-ink)" }}
-          >
-            저장한 일정 ({savedItineraries.length})
-          </p>
+        <div className="px-5 mt-7">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[14px] font-bold" style={{ color: "var(--color-ink)" }}>
+              저장한 일정 ({savedItineraries.length})
+            </p>
+            {savedItineraries.length > 0 && (
+              <button
+                onClick={() => navigate("/my/saved")}
+                className="text-[12px] font-bold tap"
+                style={{ color: "var(--color-ink-faint)" }}
+              >
+                더보기 ›
+              </button>
+            )}
+          </div>
           {removeError && (
             <p className="text-[12px] font-semibold mb-2" style={{ color: "#c2410c" }}>
               {removeError}
@@ -197,7 +197,7 @@ export default function MyPage() {
             </div>
           )}
           <div className="space-y-2.5">
-            {savedItineraries.map((itin) => {
+            {recentSavedItineraries.map((itin) => {
               const region = REGION_MAP[itin.regionId];
               return (
                 <div
@@ -253,15 +253,21 @@ export default function MyPage() {
 
         {/* 완료한 여행 */}
         {user.trips.length > 0 && (
-          <div ref={completedSectionRef} className="px-5 mt-7">
-            <p
-              className="text-[14px] font-bold mb-3"
-              style={{ color: "var(--color-ink)" }}
-            >
-              완료한 여행 기록
-            </p>
+          <div className="px-5 mt-7">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[14px] font-bold" style={{ color: "var(--color-ink)" }}>
+                완료한 여행 기록
+              </p>
+              <button
+                onClick={() => navigate("/my/trips")}
+                className="text-[12px] font-bold tap"
+                style={{ color: "var(--color-ink-faint)" }}
+              >
+                더보기 ›
+              </button>
+            </div>
             <div className="space-y-2">
-              {user.trips.map((t, idx) => {
+              {recentTrips.map((t, idx) => {
                 const region = REGION_MAP[t.regionId];
                 return (
                   <div

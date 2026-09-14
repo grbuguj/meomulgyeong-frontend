@@ -12,6 +12,8 @@ import ExplorePage from "./pages/ExplorePage";
 import RegionDetailPage from "./pages/RegionDetailPage";
 import MyPage from "./pages/MyPage";
 import TripResultPage from "./pages/TripResultPage";
+import SavedItinerariesPage from "./pages/SavedItinerariesPage";
+import CompletedTripsPage from "./pages/CompletedTripsPage";
 
 function Gate({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, hasOnboarded, authLoading } = useApp();
@@ -82,6 +84,22 @@ function AppRoutes() {
         element={
           <Gate>
             <MyPage />
+          </Gate>
+        }
+      />
+      <Route
+        path="/my/saved"
+        element={
+          <Gate>
+            <SavedItinerariesPage />
+          </Gate>
+        }
+      />
+      <Route
+        path="/my/trips"
+        element={
+          <Gate>
+            <CompletedTripsPage />
           </Gate>
         }
       />
