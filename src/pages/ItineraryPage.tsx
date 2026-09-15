@@ -350,13 +350,13 @@ export default function ItineraryPage() {
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex items-center gap-2 mb-1">
                     <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      className="inline-flex shrink-0 whitespace-nowrap text-[10px] font-bold px-2 py-0.5 rounded-full"
                       style={{ background: catStyle.bg, color: catStyle.text }}
                     >
                       {CATEGORY_LABEL[item.category]}
                     </span>
                     <p
-                      className="text-[13.5px] font-bold leading-snug"
+                      className="min-w-0 text-[13.5px] font-bold leading-snug"
                       style={{ color: "var(--color-ink)" }}
                     >
                       {item.name}
