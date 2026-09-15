@@ -320,7 +320,6 @@ export default function ItineraryPage() {
             const showPlaceImage = Boolean(item.imageUrl) && !["transit", "stay"].includes(item.category);
             const itemSubtitle =
               item.description ||
-              item.address ||
               `${CATEGORY_LABEL[item.category] ?? "여행"} 일정으로 추천된 장소예요.`;
             return (
               <div
@@ -377,6 +376,15 @@ export default function ItineraryPage() {
                   >
                     {itemSubtitle}
                   </p>
+                  {item.address && (
+                    <p
+                      className="text-[10.5px] leading-relaxed mt-0.5 truncate"
+                      style={{ color: "var(--color-ink-faint)" }}
+                      title={item.address}
+                    >
+                      📍 {item.address}
+                    </p>
+                  )}
                 </div>
                 {(item.replaceable ?? (item.category !== "stay" && item.category !== "transit")) && (
                   <button
