@@ -50,7 +50,11 @@ export interface PlaceItem {
 export interface DayPlan {
   day: number;
   date: string;
-  weather: { temp: number | null; condition: string | null };
+  weather: {
+    minimumTemperature: number | null;
+    maximumTemperature: number | null;
+    condition: string | null;
+  };
   items: PlaceItem[];
 }
 

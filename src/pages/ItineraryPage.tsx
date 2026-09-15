@@ -288,7 +288,9 @@ export default function ItineraryPage() {
                 Day {d.day}
                 <br />
                 <span className="font-semibold opacity-90">
-                  {d.weather.temp !== null && `${d.weather.temp}° `}
+                  {d.weather.minimumTemperature !== null && `최저 ${d.weather.minimumTemperature}°`}
+                  {d.weather.minimumTemperature !== null && d.weather.maximumTemperature !== null && " / "}
+                  {d.weather.maximumTemperature !== null && `최고 ${d.weather.maximumTemperature}° `}
                   {d.weather.condition ?? "날씨 미정"}
                 </span>
               </button>

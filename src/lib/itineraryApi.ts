@@ -199,7 +199,8 @@ function toFrontendDay(day: ItineraryDayResponse, regionId: string): DayPlan {
     day: day.dayNumber,
     date: day.date,
     weather: {
-      temp: day.weather.maximumTemperature,
+      minimumTemperature: day.weather.minimumTemperature,
+      maximumTemperature: day.weather.maximumTemperature,
       condition: condition ? WEATHER_CONDITION_LABELS[condition] ?? condition : null,
     },
     items: day.items.map((it) => toFrontendItem(it, regionId)),
