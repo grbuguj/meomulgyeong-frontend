@@ -318,10 +318,14 @@ export default function ItineraryPage() {
             const isSwapping = swapping === item.id;
             // 실제 장소 카드만 대표 이미지를 보여준다. 이동·휴식은 타임라인을 빠르게 훑을 수 있도록 텍스트형으로 유지한다.
             const showPlaceImage = Boolean(item.imageUrl) && !["transit", "stay"].includes(item.category);
+            const itemSubtitle =
+              item.description ||
+              item.address ||
+              `${CATEGORY_LABEL[item.category] ?? "여행"} 일정으로 추천된 장소예요.`;
             return (
               <div
                 key={item.id}
-                className="rounded-[20px] p-4 flex gap-3"
+                className="relative rounded-[20px] p-3.5 flex gap-3 min-h-[92px]"
                 style={{
                   background: "white",
                   boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.09)",
@@ -330,12 +334,23 @@ export default function ItineraryPage() {
                 }}
               >
                 <div
-                  className="text-[11px] font-bold w-11 pt-0.5 shrink-0"
+                  className="text-[11px] font-bold w-10 pt-1 shrink-0"
                   style={{ color: "var(--color-ink-faint)" }}
                 >
                   {item.time}
                 </div>
-                <div className="flex-1 min-w-0">
+                {showPlaceImage && (
+                  <img
+                    src={item.imageUrl ?? undefined}
+                    alt={`${item.name} 대표 이미지`}
+                    className="w-[72px] h-[72px] rounded-xl object-cover shrink-0"
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
+                <div className={`flex-1 min-w-0 ${item.replaceable ?? (item.category !== "stay" && item.category !== "transit") ? "pr-9" : ""}`}>
                   <div className="flex items-center gap-2 mb-1">
                     <span
                       className="text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -344,43 +359,30 @@ export default function ItineraryPage() {
                       {CATEGORY_LABEL[item.category]}
                     </span>
                     <p
-                      className="text-[14px] font-bold"
+                      className="text-[13.5px] font-bold leading-snug"
                       style={{ color: "var(--color-ink)" }}
                     >
                       {item.name}
                     </p>
                   </div>
-                  {item.description && (
-                    <p
-                      className="text-[12px] leading-relaxed"
-                      style={{
-                        color: "var(--color-ink-soft)",
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: 2,
-                        overflow: "hidden",
-                      }}
-                    >
-                      {item.description}
-                    </p>
-                  )}
-                </div>
-                {showPlaceImage && (
-                  <img
-                    src={item.imageUrl ?? undefined}
-                    alt={`${item.name} 대표 이미지`}
-                    className="w-16 h-16 rounded-xl object-cover shrink-0"
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
+                  <p
+                    className="text-[11.5px] leading-relaxed"
+                    style={{
+                      color: "var(--color-ink-soft)",
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 2,
+                      overflow: "hidden",
                     }}
-                  />
-                )}
+                  >
+                    {itemSubtitle}
+                  </p>
+                </div>
                 {(item.replaceable ?? (item.category !== "stay" && item.category !== "transit")) && (
                   <button
                     onClick={() => handleSwap(item.id)}
                     disabled={!!swapping}
-                    className="text-[11px] font-bold self-start shrink-0 tap"
+                    className="absolute top-3.5 right-3.5 text-[11px] font-bold tap"
                     style={{ color: "var(--color-accent)" }}
                   >
                     {isSwapping ? "…" : "교체 ↻"}
