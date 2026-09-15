@@ -319,6 +319,9 @@ export default function ItineraryPage() {
             // 실제 장소 카드만 대표 이미지를 보여준다. 이동·휴식은 타임라인을 빠르게 훑을 수 있도록 텍스트형으로 유지한다.
             const showPlaceImage = Boolean(item.imageUrl) && !["transit", "stay"].includes(item.category);
             const hasSupportingText = Boolean(item.description || item.address);
+            const canOpenMap = !["transit", "stay"].includes(item.category);
+            const canReplace = item.replaceable ?? (item.category !== "stay" && item.category !== "transit");
+            const mapQuery = encodeURIComponent([item.name, item.address].filter(Boolean).join(" "));
             return (
               <div
                 key={item.id}
@@ -336,7 +339,7 @@ export default function ItineraryPage() {
                 >
                   {item.time}
                 </div>
-                <div className={`flex-1 min-w-0 ${item.replaceable ?? (item.category !== "stay" && item.category !== "transit") ? "pr-9" : ""}`}>
+                <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex items-center gap-2 mb-1">
                     <span
                       className="text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -367,7 +370,7 @@ export default function ItineraryPage() {
                   )}
                   {item.address && (
                     <p
-                      className="text-[10.5px] leading-relaxed mt-0.5"
+                      className="text-[9.5px] leading-snug mt-0.5"
                       style={{
                         color: "var(--color-ink-faint)",
                         display: "-webkit-box",
@@ -380,6 +383,31 @@ export default function ItineraryPage() {
                       📍 {item.address}
                     </p>
                   )}
+                  {(canOpenMap || canReplace) && (
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {canOpenMap && (
+                        <a
+                          href={`https://map.kakao.com/link/search/${mapQuery}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] font-bold tap"
+                          style={{ color: "var(--color-ink-faint)" }}
+                        >
+                          카카오맵 ↗
+                        </a>
+                      )}
+                      {canReplace && (
+                        <button
+                          onClick={() => handleSwap(item.id)}
+                          disabled={!!swapping}
+                          className="text-[10px] font-bold tap"
+                          style={{ color: "var(--color-accent)" }}
+                        >
+                          {isSwapping ? "교체 중…" : "교체 ↻"}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {showPlaceImage && (
                   <img
@@ -391,16 +419,6 @@ export default function ItineraryPage() {
                       event.currentTarget.style.display = "none";
                     }}
                   />
-                )}
-                {(item.replaceable ?? (item.category !== "stay" && item.category !== "transit")) && (
-                  <button
-                    onClick={() => handleSwap(item.id)}
-                    disabled={!!swapping}
-                    className="absolute top-3.5 right-3.5 text-[11px] font-bold tap"
-                    style={{ color: "var(--color-accent)" }}
-                  >
-                    {isSwapping ? "…" : "교체 ↻"}
-                  </button>
                 )}
               </div>
             );
