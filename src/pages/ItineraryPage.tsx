@@ -335,10 +335,15 @@ export default function ItineraryPage() {
                 }}
               >
                 <div
-                  className="text-[11px] font-bold w-10 pt-1 shrink-0"
-                  style={{ color: "var(--color-ink-faint)" }}
+                  className="w-6 pt-0.5 shrink-0 flex justify-center"
                 >
-                  {item.time}
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold"
+                    style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink-faint)" }}
+                    aria-label={`일정 ${idx + 1}번째`}
+                  >
+                    {idx + 1}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex items-center gap-2 mb-1">
