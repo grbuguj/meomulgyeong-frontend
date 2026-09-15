@@ -318,13 +318,11 @@ export default function ItineraryPage() {
             const isSwapping = swapping === item.id;
             // 실제 장소 카드만 대표 이미지를 보여준다. 이동·휴식은 타임라인을 빠르게 훑을 수 있도록 텍스트형으로 유지한다.
             const showPlaceImage = Boolean(item.imageUrl) && !["transit", "stay"].includes(item.category);
-            const itemSubtitle =
-              item.description ||
-              `${CATEGORY_LABEL[item.category] ?? "여행"} 일정으로 추천된 장소예요.`;
+            const hasSupportingText = Boolean(item.description || item.address);
             return (
               <div
                 key={item.id}
-                className="relative rounded-[20px] p-3.5 flex gap-3 min-h-[92px]"
+                className={`relative rounded-[20px] p-3.5 flex gap-3 ${showPlaceImage || hasSupportingText ? "min-h-[92px]" : ""}`}
                 style={{
                   background: "white",
                   boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.09)",
@@ -338,17 +336,6 @@ export default function ItineraryPage() {
                 >
                   {item.time}
                 </div>
-                {showPlaceImage && (
-                  <img
-                    src={item.imageUrl ?? undefined}
-                    alt={`${item.name} 대표 이미지`}
-                    className="w-[72px] h-[72px] rounded-xl object-cover shrink-0"
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                  />
-                )}
                 <div className={`flex-1 min-w-0 ${item.replaceable ?? (item.category !== "stay" && item.category !== "transit") ? "pr-9" : ""}`}>
                   <div className="flex items-center gap-2 mb-1">
                     <span
@@ -364,28 +351,47 @@ export default function ItineraryPage() {
                       {item.name}
                     </p>
                   </div>
-                  <p
-                    className="text-[11.5px] leading-relaxed"
-                    style={{
-                      color: "var(--color-ink-soft)",
-                      display: "-webkit-box",
-                      WebkitBoxOrient: "vertical",
-                      WebkitLineClamp: 2,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {itemSubtitle}
-                  </p>
+                  {item.description && (
+                    <p
+                      className="text-[11.5px] leading-relaxed"
+                      style={{
+                        color: "var(--color-ink-soft)",
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {item.description}
+                    </p>
+                  )}
                   {item.address && (
                     <p
-                      className="text-[10.5px] leading-relaxed mt-0.5 truncate"
-                      style={{ color: "var(--color-ink-faint)" }}
+                      className="text-[10.5px] leading-relaxed mt-0.5"
+                      style={{
+                        color: "var(--color-ink-faint)",
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                        overflow: "hidden",
+                      }}
                       title={item.address}
                     >
                       📍 {item.address}
                     </p>
                   )}
                 </div>
+                {showPlaceImage && (
+                  <img
+                    src={item.imageUrl ?? undefined}
+                    alt={`${item.name} 대표 이미지`}
+                    className="w-[72px] h-[72px] rounded-xl object-cover shrink-0"
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
                 {(item.replaceable ?? (item.category !== "stay" && item.category !== "transit")) && (
                   <button
                     onClick={() => handleSwap(item.id)}
