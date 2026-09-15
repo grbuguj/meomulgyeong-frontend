@@ -316,6 +316,8 @@ export default function ItineraryPage() {
           {day.items.map((item, idx) => {
             const catStyle = CATEGORY_STYLE[item.category] ?? CATEGORY_STYLE.stay;
             const isSwapping = swapping === item.id;
+            // 실제 장소 카드만 대표 이미지를 보여준다. 이동·휴식은 타임라인을 빠르게 훑을 수 있도록 텍스트형으로 유지한다.
+            const showPlaceImage = Boolean(item.imageUrl) && !["transit", "stay"].includes(item.category);
             return (
               <div
                 key={item.id}
@@ -333,7 +335,7 @@ export default function ItineraryPage() {
                 >
                   {item.time}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span
                       className="text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -348,13 +350,32 @@ export default function ItineraryPage() {
                       {item.name}
                     </p>
                   </div>
-                  <p
-                    className="text-[12px] leading-relaxed"
-                    style={{ color: "var(--color-ink-soft)" }}
-                  >
-                    {item.description}
-                  </p>
+                  {item.description && (
+                    <p
+                      className="text-[12px] leading-relaxed"
+                      style={{
+                        color: "var(--color-ink-soft)",
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {item.description}
+                    </p>
+                  )}
                 </div>
+                {showPlaceImage && (
+                  <img
+                    src={item.imageUrl ?? undefined}
+                    alt={`${item.name} 대표 이미지`}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0"
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
                 {(item.replaceable ?? (item.category !== "stay" && item.category !== "transit")) && (
                   <button
                     onClick={() => handleSwap(item.id)}
