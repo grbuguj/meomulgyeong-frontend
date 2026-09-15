@@ -65,6 +65,7 @@ export default function ItineraryPage() {
   const [completing, setCompleting] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<{ src: string; name: string } | null>(null);
 
   const created = useRef(false);
 
@@ -387,6 +388,17 @@ export default function ItineraryPage() {
                     <div className="flex items-center gap-2 mt-1.5">
                       {canOpenMap && (
                         <a
+                          href={`https://map.naver.com/p/search/${mapQuery}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] font-bold tap"
+                          style={{ color: "var(--color-ink-faint)" }}
+                        >
+                          네이버지도 ↗
+                        </a>
+                      )}
+                      {canOpenMap && (
+                        <a
                           href={`https://map.kakao.com/link/search/${mapQuery}`}
                           target="_blank"
                           rel="noreferrer"
@@ -396,29 +408,39 @@ export default function ItineraryPage() {
                           카카오맵 ↗
                         </a>
                       )}
-                      {canReplace && (
-                        <button
-                          onClick={() => handleSwap(item.id)}
-                          disabled={!!swapping}
-                          className="text-[10px] font-bold tap"
-                          style={{ color: "var(--color-accent)" }}
-                        >
-                          {isSwapping ? "교체 중…" : "교체 ↻"}
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
-                {showPlaceImage && (
-                  <img
-                    src={item.imageUrl ?? undefined}
-                    alt={`${item.name} 대표 이미지`}
-                    className="w-[72px] h-[72px] rounded-xl object-cover shrink-0"
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                  />
+                {(showPlaceImage || canReplace) && (
+                  <div className="w-[68px] shrink-0 flex flex-col items-end gap-1">
+                    {canReplace && (
+                      <button
+                        onClick={() => handleSwap(item.id)}
+                        disabled={!!swapping}
+                        className="text-[10px] font-bold tap"
+                        style={{ color: "var(--color-accent)" }}
+                      >
+                        {isSwapping ? "교체 중…" : "교체 ↻"}
+                      </button>
+                    )}
+                    {showPlaceImage && item.imageUrl && (
+                      <button
+                        onClick={() => setImagePreview({ src: item.imageUrl!, name: item.name })}
+                        className="w-[68px] h-[68px] rounded-xl overflow-hidden tap"
+                        aria-label={`${item.name} 대표 이미지 크게 보기`}
+                      >
+                        <img
+                          src={item.imageUrl}
+                          alt={`${item.name} 대표 이미지`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.parentElement?.remove();
+                          }}
+                        />
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             );
@@ -520,6 +542,21 @@ export default function ItineraryPage() {
             {completing ? "처리 중…" : "지역 기여도 확인하기"}
           </Button>
         </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(imagePreview)}
+        onClose={() => setImagePreview(null)}
+        title={imagePreview?.name ?? "장소 이미지"}
+      >
+        {imagePreview && (
+          <img
+            src={imagePreview.src}
+            alt={`${imagePreview.name} 대표 이미지`}
+            className="w-full max-h-[58vh] object-contain rounded-2xl"
+            onError={() => setImagePreview(null)}
+          />
+        )}
       </Modal>
     </>
   );
