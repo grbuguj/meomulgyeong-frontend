@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import { REGION_MAP } from "../data/regions";
-import type { Itinerary } from "../types";
+import type { DayPlan, Itinerary } from "../types";
 import { useApp } from "../store/AppContext";
 import {
   bookmarkItinerary,
@@ -35,6 +35,28 @@ const CATEGORY_STYLE: Record<string, { bg: string; text: string }> = {
   stay: { bg: "var(--color-ivory-warm)", text: "var(--color-ink-muted)" },
   transit: { bg: "var(--color-ivory-warm)", text: "var(--color-ink-muted)" },
 };
+
+function weatherText(weather: DayPlan["weather"]): string {
+  const range = [
+    weather.minimumTemperature !== null ? `최저 ${weather.minimumTemperature}°` : null,
+    weather.maximumTemperature !== null ? `최고 ${weather.maximumTemperature}°` : null,
+  ].filter(Boolean);
+  return [range.join(" / "), weather.condition ?? "날씨 미정"].filter(Boolean).join(" ");
+}
+
+/**
+ * 출처·한계 고지.
+ * 관광 정보와 예보는 원본이 바뀌거나 현장과 다를 수 있어, 화면과 인쇄본 양쪽에 함께 표기한다.
+ */
+function SourceNote({ className = "", style }: { className?: string; style?: CSSProperties }) {
+  return (
+    <div className={className} style={style}>
+      <p>· 장소 정보 ⓒ한국관광공사 「국문 관광정보 서비스」</p>
+      <p>· 날씨 기상청 단기예보 — 발표 시점 기준 예보값입니다.</p>
+      <p>· 영업시간·휴무일은 변동될 수 있습니다. 방문 전 해당 장소에 확인해주세요.</p>
+    </div>
+  );
+}
 
 export default function ItineraryPage() {
   const { regionId } = useParams();
@@ -287,12 +309,7 @@ export default function ItineraryPage() {
               >
                 Day {d.day}
                 <br />
-                <span className="font-semibold opacity-90">
-                  {d.weather.minimumTemperature !== null && `최저 ${d.weather.minimumTemperature}°`}
-                  {d.weather.minimumTemperature !== null && d.weather.maximumTemperature !== null && " / "}
-                  {d.weather.maximumTemperature !== null && `최고 ${d.weather.maximumTemperature}° `}
-                  {d.weather.condition ?? "날씨 미정"}
-                </span>
+                <span className="font-semibold opacity-90">{weatherText(d.weather)}</span>
               </button>
             );
           })}
@@ -454,15 +471,21 @@ export default function ItineraryPage() {
           })}
         </div>
 
-        <div className="px-5 mt-5">
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={handleRegenerateAll}
-            disabled={regenerating}
-          >
-            {regenerating ? "재생성 중…" : "일정 전체 재생성"}
+        <div className="px-5 mt-5 grid grid-cols-2 gap-2.5">
+          <Button variant="secondary" onClick={handleRegenerateAll} disabled={regenerating}>
+            {regenerating ? "재생성 중…" : "전체 재생성"}
           </Button>
+          <Button variant="secondary" onClick={() => window.print()}>
+            인쇄 · PDF
+          </Button>
+        </div>
+
+        <p className="px-5 mt-2 text-[10.5px] leading-relaxed" style={{ color: "var(--color-ink-faint)" }}>
+          통신이 불안정한 지역을 대비해 일정을 PDF로 저장해두세요.
+        </p>
+
+        <div className="px-5 mt-4 text-[10px] leading-relaxed" style={{ color: "var(--color-ink-faint)" }}>
+          <SourceNote className="space-y-0.5" />
         </div>
       </div>
 
@@ -476,6 +499,53 @@ export default function ItineraryPage() {
         <Button variant="accent" fullWidth onClick={() => setCompleteModal(true)}>
           여행 완료
         </Button>
+      </div>
+
+      {/* 인쇄 · PDF 저장용 문서 — 화면에는 보이지 않고, 인쇄 시 모든 날짜가 한 번에 출력된다 */}
+      <div className="print-sheet">
+        <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>
+          {region.name} {nights}박 {nights + 1}일
+        </h1>
+        <p style={{ fontSize: 11, marginBottom: 16 }}>{region.identityLine}</p>
+
+        {itin.days.map((d) => (
+          <section key={d.day} className="print-day" style={{ marginBottom: 18 }}>
+            <h2
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                borderBottom: "1px solid #000",
+                paddingBottom: 3,
+                marginBottom: 8,
+              }}
+            >
+              Day {d.day} · {d.date} · {weatherText(d.weather)}
+            </h2>
+            <ol style={{ margin: 0, padding: 0, listStyle: "none" }}>
+              {d.items.map((item, idx) => (
+                <li
+                  key={item.id}
+                  className="print-item"
+                  style={{ display: "flex", gap: 8, fontSize: 11, marginBottom: 7 }}
+                >
+                  <span style={{ width: 14, flexShrink: 0 }}>{idx + 1}.</span>
+                  <div>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span style={{ marginLeft: 6, fontSize: 9.5 }}>
+                        [{CATEGORY_LABEL[item.category]}]
+                      </span>
+                    </div>
+                    {item.address && <div style={{ fontSize: 9.5 }}>{item.address}</div>}
+                    {item.description && <div style={{ fontSize: 9.5 }}>{item.description}</div>}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))}
+
+        <SourceNote style={{ fontSize: 8.5, marginTop: 20, lineHeight: 1.6 }} />
       </div>
 
       {/* Complete modal */}

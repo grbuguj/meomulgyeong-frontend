@@ -263,3 +263,60 @@ button {
   animation: gradientShift 12s ease infinite;
   background-size: 300% 300%;
 }
+
+/* ===== 인쇄 · PDF 저장 =====
+   화면용 카드/그림자 레이아웃은 종이에서 읽기 어렵고, 앱 셸이 높이를 고정해
+   스크롤을 가두기 때문에 그대로 인쇄하면 첫 화면만 나온다.
+   그래서 인쇄 시에는 문서형 레이아웃(.print-sheet)만 남기고 앱 UI를 숨긴다. */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  /* 모바일 셸의 고정 높이·스크롤 제약을 풀어야 여러 장으로 흘러간다 */
+  .phone-shell {
+    display: block;
+    padding: 0;
+    background: #fff;
+  }
+
+  .phone-shell__screen {
+    display: block;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  /* 인쇄 문서가 있는 화면에서만 앱 UI를 숨긴다(다른 화면은 평소대로 인쇄됨) */
+  .phone-shell__screen:has(.print-sheet) > *:not(.print-sheet) {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block !important;
+    color: #000;
+  }
+
+  .print-sheet .print-item,
+  .print-sheet .print-day {
+    break-inside: avoid;
+  }
+
+  .print-sheet h2 {
+    break-after: avoid;
+  }
+}
