@@ -377,6 +377,20 @@ export default function MyPage() {
             )}
           </div>
           <div
+            className="flex items-center justify-between gap-3 text-[13px] py-3.5"
+            style={{ borderBottom: "1px solid var(--color-line-soft)" }}
+          >
+            <span className="font-semibold shrink-0" style={{ color: "var(--color-ink-soft)" }}>이름</span>
+            <span className="font-bold truncate" style={{ color: "var(--color-ink)" }}>{user.name || "-"}</span>
+          </div>
+          <div
+            className="flex items-center justify-between gap-3 text-[13px] py-3.5"
+            style={{ borderBottom: "1px solid var(--color-line-soft)" }}
+          >
+            <span className="font-semibold shrink-0" style={{ color: "var(--color-ink-soft)" }}>이메일</span>
+            <span className="font-bold truncate" style={{ color: "var(--color-ink)" }}>{user.email || "-"}</span>
+          </div>
+          <div
             className="flex justify-between text-[13px] py-3.5"
             style={{ borderBottom: "1px solid var(--color-line-soft)" }}
           >

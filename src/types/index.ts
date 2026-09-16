@@ -92,6 +92,8 @@ export interface TripCompletion {
 
 export interface UserProfile {
   nickname: string;
+  name: string;
+  email: string | null;
   loginProvider: "google" | "kakao" | "naver" | null;
   stamps: string[]; // regionIds visited
   savedItineraries: string[]; // itinerary ids

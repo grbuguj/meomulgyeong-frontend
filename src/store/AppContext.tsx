@@ -49,6 +49,8 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 const initialUser: UserProfile = {
   nickname: "",
+  name: "",
+  email: null,
   loginProvider: null,
   stamps: [],
   savedItineraries: [],
@@ -80,6 +82,8 @@ function toUserProfile(me: MeResponse, prev: UserProfile): UserProfile {
   return {
     ...prev,
     nickname: me.nickname ?? "",
+    name: me.name,
+    email: me.email,
     loginProvider: me.provider,
   };
 }
