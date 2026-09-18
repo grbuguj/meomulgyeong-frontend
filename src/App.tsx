@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppProvider, useApp } from "./store/AppContext";
+import { ThemeProvider } from "./store/ThemeContext";
 import PhoneShell from "./components/PhoneShell";
 import BottomNav from "./components/BottomNav";
 import LoginPage from "./pages/LoginPage";
@@ -118,9 +119,11 @@ function Shell() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <Shell />
-    </AppProvider>
+    <ThemeProvider>
+      <AppProvider>
+        <Shell />
+      </AppProvider>
+    </ThemeProvider>
   );
 }
 

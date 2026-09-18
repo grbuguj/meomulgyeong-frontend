@@ -50,6 +50,90 @@
   --color-card: #ffffff;
 }
 
+:root {
+  color-scheme: light;
+}
+
+/* 접근성 설정은 OS 테마와 별개로 서비스 안에서 직접 선택할 수 있다. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-ivory: #171917;
+  --color-ivory-warm: #242824;
+  --color-ivory-deep: #303630;
+  --color-parchment: #4a5249;
+  --color-ink: #f4f1e9;
+  --color-ink-soft: #d3d0c8;
+  --color-ink-muted: #aaa89f;
+  --color-ink-faint: #85867e;
+  --color-forest: #8ab797;
+  --color-forest-mid: #6f9d7d;
+  --color-forest-dark: #c2e5ca;
+  --color-forest-light: #253b2b;
+  --color-sea: #87c6e3;
+  --color-sea-soft: #213b47;
+  --color-loess: #e5ae6d;
+  --color-loess-soft: #433523;
+  --color-amber: #f3ad5d;
+  --color-amber-soft: #4a3522;
+  --color-accent: #8ab7ff;
+  --color-accent-dark: #b8d1ff;
+  --color-accent-soft: #223657;
+  --color-mint: #6fd6ae;
+  --color-mint-soft: #1f4136;
+  --color-line: #41473f;
+  --color-line-soft: #333934;
+  --color-card: #202421;
+}
+
+/* 기존 인라인 white 카드까지 다크 팔레트로 맞춘다. */
+:root[data-theme="dark"] [style*="background: white"] {
+  background: var(--color-card) !important;
+}
+
+:root[data-theme="dark"] .glass,
+:root[data-theme="dark"] .glass-ivory {
+  background: rgba(32, 36, 33, 0.9);
+}
+
+:root[data-contrast="high"] {
+  --color-ivory: #ffffff;
+  --color-ivory-warm: #f2f2f2;
+  --color-ink: #000000;
+  --color-ink-soft: #111111;
+  --color-ink-muted: #303030;
+  --color-ink-faint: #4a4a4a;
+  --color-accent: #003ecc;
+  --color-accent-dark: #002b8f;
+  --color-accent-soft: #d9e5ff;
+  --color-line: #1c1c1c;
+  --color-line-soft: #545454;
+}
+
+:root[data-theme="dark"][data-contrast="high"] {
+  --color-ivory: #000000;
+  --color-ivory-warm: #101010;
+  --color-ink: #ffffff;
+  --color-ink-soft: #ffffff;
+  --color-ink-muted: #e4e4e4;
+  --color-ink-faint: #d1d1d1;
+  --color-accent: #8fb6ff;
+  --color-accent-dark: #ffffff;
+  --color-accent-soft: #002b8f;
+  --color-line: #ffffff;
+  --color-line-soft: #d4d4d4;
+  --color-card: #000000;
+}
+
+:root[data-contrast="high"] * {
+  text-shadow: none;
+}
+
+:root[data-contrast="high"] button:focus-visible,
+:root[data-contrast="high"] a:focus-visible {
+  outline: 3px solid #ffb000;
+  outline-offset: 3px;
+}
+
 html,
 body {
   margin: 0;

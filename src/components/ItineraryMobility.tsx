@@ -31,15 +31,14 @@ function RouteSketch({ segments }: { segments: RouteSegment[] }) {
   return (
     <div className="mt-3 rounded-2xl overflow-hidden" style={{ background: "#e8f0ea" }}>
       <div className="px-3 pt-2 text-[10px] font-bold" style={{ color: "var(--color-forest)" }}>
-        오늘의 이동 동선
+        오늘의 동선 흐름
       </div>
       <svg viewBox="0 0 280 92" className="w-full h-[88px]" role="img" aria-label="일정 장소 간 이동 동선">
         <path d="M0 16 C55 5 76 37 128 24 S218 5 280 28" stroke="rgba(56,80,62,0.12)" strokeWidth="18" fill="none" />
         <polyline points={svgPoints} stroke="#2b6ce0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        {svgPoints.split(" ").map((point, index) => {
-          const [cx, cy] = point.split(",");
-          const edge = index === 0 || index === points.length - 1;
-          return <circle key={`${point}-${index}`} cx={cx} cy={cy} r={edge ? 5 : 2.5} fill={edge ? "#d97316" : "#2b6ce0"} stroke="white" strokeWidth="1.5" />;
+        {([0, points.length - 1] as const).map((index) => {
+          const [cx, cy] = svgPoints.split(" ")[index].split(",");
+          return <circle key={index} cx={cx} cy={cy} r="5" fill={index === 0 ? "#d97316" : "#2b6ce0"} stroke="white" strokeWidth="2" />;
         })}
       </svg>
     </div>

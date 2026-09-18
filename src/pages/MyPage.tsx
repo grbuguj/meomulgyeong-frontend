@@ -8,9 +8,12 @@ import { useState } from "react";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import { ApiError } from "../lib/apiClient";
+import { useTheme } from "../store/ThemeContext";
+import Icon from "../components/Icon";
 
 export default function MyPage() {
   const { user, savedItineraries, removeSavedItinerary, logout, updateNickname } = useApp();
+  const { colorTheme, highContrast, setColorTheme, setHighContrast } = useTheme();
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
@@ -63,7 +66,7 @@ export default function MyPage() {
             onClick={() => setSettingsOpen(true)}
             className="w-9 h-9 rounded-full bg-white card-soft flex items-center justify-center text-base tap"
           >
-            ⚙️
+            <Icon name="settings" size={18} />
           </button>
         }
       />
@@ -411,6 +414,42 @@ export default function MyPage() {
           >
             <span className="font-semibold" style={{ color: "var(--color-ink-soft)" }}>버전</span>
             <span className="font-bold" style={{ color: "var(--color-ink)" }}>v0.1.0 (MVP)</span>
+          </div>
+          <div className="py-3.5" style={{ borderBottom: "1px solid var(--color-line-soft)" }}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Icon name={colorTheme === "dark" ? "moon" : "sun"} size={17} />
+                <div>
+                  <p className="text-[13px] font-semibold" style={{ color: "var(--color-ink-soft)" }}>화면 테마</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: "var(--color-ink-faint)" }}>밝은 화면 또는 다크모드</p>
+                </div>
+              </div>
+              <div className="flex rounded-xl p-0.5" style={{ background: "var(--color-ivory-warm)" }}>
+                {(["light", "dark"] as const).map((theme) => (
+                  <button key={theme} onClick={() => setColorTheme(theme)} className="px-2.5 py-1.5 rounded-[10px] text-[10px] font-extrabold tap" style={colorTheme === theme ? { background: "var(--color-card)", color: "var(--color-accent)", boxShadow: "0 1px 4px rgba(28,26,22,0.14)" } : { color: "var(--color-ink-muted)" }}>
+                    {theme === "light" ? "밝게" : "어둡게"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 py-3.5" style={{ borderBottom: "1px solid var(--color-line-soft)" }}>
+            <div className="flex items-center gap-2">
+              <Icon name="contrast" size={17} />
+              <div>
+                <p className="text-[13px] font-semibold" style={{ color: "var(--color-ink-soft)" }}>고대비 모드</p>
+                <p className="text-[10px] mt-0.5" style={{ color: "var(--color-ink-faint)" }}>글자와 버튼 경계를 더 선명하게</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setHighContrast(!highContrast)}
+              role="switch"
+              aria-checked={highContrast}
+              className="w-11 h-6 rounded-full p-0.5 tap"
+              style={{ background: highContrast ? "var(--color-accent)" : "var(--color-ivory-deep)" }}
+            >
+              <span className="block w-5 h-5 rounded-full transition-transform duration-200" style={{ background: "white", transform: highContrast ? "translateX(20px)" : "translateX(0)" }} />
+            </button>
           </div>
           <Button variant="secondary" fullWidth className="mt-5" onClick={logout}>
             로그아웃
