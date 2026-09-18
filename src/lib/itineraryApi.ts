@@ -37,6 +37,8 @@ export interface ItineraryItemResponse {
   festivalId: number | null;
   imageUrl: string | null;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   eventStartDate: string | null;
   eventEndDate: string | null;
   replaceable: boolean;
@@ -90,6 +92,56 @@ export interface ReplaceItemResponse {
   replacedItemId: number;
   newItem: ItineraryItemResponse;
   generationVersion: number;
+}
+
+export type TransportMode = "CAR" | "TRANSIT";
+
+export interface RouteSegment {
+  fromItemId: number;
+  fromTitle: string;
+  toItemId: number;
+  toTitle: string;
+  status: "OK" | "NEARBY" | "NO_STOP" | "NO_ROUTE" | "UNAVAILABLE";
+  durationMinutes: number | null;
+  distanceMeters: number | null;
+  transfers: number | null;
+  fare: number | null;
+  free: boolean | null;
+  taxiFare: number | null;
+  summary: string | null;
+  path: [number, number][] | null;
+  landingUrl: string | null;
+}
+
+export interface ItineraryRoutesResponse {
+  itineraryId: number;
+  dayNumber: number;
+  date: string;
+  mode: TransportMode;
+  segments: RouteSegment[];
+  notice: string;
+  source: string;
+  regionTransit: {
+    timetable: { url: string; source: string } | null;
+    freeBus: { label: string; caution: string; basis: string } | null;
+    checkedOn: string | null;
+  } | null;
+  fetchedAt: string;
+}
+
+export interface OperationInfoResponse {
+  itemId: number;
+  placeId: number | null;
+  contentTypeId: string | null;
+  visitDate: string;
+  visitDayOfWeek: string;
+  status: "OK" | "NO_DATA" | "NOT_SUPPORTED" | "UNAVAILABLE";
+  useTime: string | null;
+  restDate: string | null;
+  closedDayWarning: { level: string; message: string } | null;
+  notice: string;
+  source: string;
+  fetchedAt: string;
 }
 
 export interface CompleteItineraryRequest {
@@ -189,6 +241,9 @@ function toFrontendItem(item: ItineraryItemResponse, regionId: string): PlaceIte
     description: item.reason ?? "",
     imageUrl: item.imageUrl,
     address: item.address,
+    latitude: item.latitude,
+    longitude: item.longitude,
+    placeId: item.placeId,
     replaceable: item.replaceable,
   };
 }
@@ -275,6 +330,22 @@ export async function regenerateFullItinerary(itineraryId: number): Promise<Itin
   return apiFetch<ItineraryResponse>(`/api/itineraries/${itineraryId}/regenerate`, {
     method: "POST",
   });
+}
+
+/** 날짜별 이동 동선. 백엔드가 매 요청마다 최신 경로를 조회하며 저장하지 않는다. */
+export function getItineraryRoutes(
+  itineraryId: number,
+  dayNumber: number,
+  mode: TransportMode
+): Promise<ItineraryRoutesResponse> {
+  return apiFetch<ItineraryRoutesResponse>(`/api/itineraries/${itineraryId}/days/${dayNumber}/routes`, {
+    query: { mode },
+  });
+}
+
+/** 장소 운영시간·휴무일. 사용자가 장소 정보를 열었을 때만 조회한다. */
+export function getOperationInfo(itineraryId: number, itemId: number): Promise<OperationInfoResponse> {
+  return apiFetch<OperationInfoResponse>(`/api/itineraries/${itineraryId}/items/${itemId}/operation-info`);
 }
 
 /** 5. 일정 북마크 추가 */

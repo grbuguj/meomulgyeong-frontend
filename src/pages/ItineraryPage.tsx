@@ -3,19 +3,25 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
+import ItineraryMobility from "../components/ItineraryMobility";
 import { REGION_MAP } from "../data/regions";
-import type { DayPlan, Itinerary } from "../types";
+import type { DayPlan, Itinerary, PlaceItem } from "../types";
 import { useApp } from "../store/AppContext";
 import {
   bookmarkItinerary,
   completeItinerary,
   createItinerary,
+  getItineraryRoutes,
+  getOperationInfo,
   getItinerary,
   regenerateFullItinerary,
   replaceItineraryItem,
   toBackendCompanion,
   toFrontendItinerary,
   toTripCompletion,
+  type ItineraryRoutesResponse,
+  type OperationInfoResponse,
+  type TransportMode,
 } from "../lib/itineraryApi";
 import { ApiError } from "../lib/apiClient";
 import { toISODate, today } from "../lib/date";
@@ -88,6 +94,15 @@ export default function ItineraryPage() {
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<{ src: string; name: string } | null>(null);
+  const [transportMode, setTransportMode] = useState<TransportMode>("CAR");
+  const [routes, setRoutes] = useState<ItineraryRoutesResponse | null>(null);
+  const [routesLoading, setRoutesLoading] = useState(false);
+  const [routesError, setRoutesError] = useState<string | null>(null);
+  const [routeComparison, setRouteComparison] = useState<Partial<Record<TransportMode, ItineraryRoutesResponse>> | null>(null);
+  const [comparingRoutes, setComparingRoutes] = useState(false);
+  const [placeDetail, setPlaceDetail] = useState<{ item: PlaceItem; info: OperationInfoResponse | null } | null>(null);
+  const [operationLoading, setOperationLoading] = useState(false);
+  const [operationError, setOperationError] = useState<string | null>(null);
 
   const created = useRef(false);
 
@@ -130,6 +145,30 @@ export default function ItineraryPage() {
     [savedItineraries, itin]
   );
 
+  const day = useMemo(
+    () => itin?.days.find((candidate) => candidate.day === activeDay) ?? itin?.days[0] ?? null,
+    [itin, activeDay]
+  );
+
+  useEffect(() => {
+    if (!backendItineraryId || !day) return;
+    let cancelled = false;
+    setRoutesLoading(true);
+    setRoutesError(null);
+    setRoutes(null);
+    getItineraryRoutes(backendItineraryId, day.day, transportMode)
+      .then((response) => {
+        if (!cancelled) setRoutes(response);
+      })
+      .catch((requestError) => {
+        if (!cancelled) setRoutesError(requestError instanceof ApiError ? requestError.message : "이동 경로를 불러오지 못했어요.");
+      })
+      .finally(() => {
+        if (!cancelled) setRoutesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [backendItineraryId, day?.day, transportMode]);
+
   if (!region) {
     return (
       <div className="p-6" style={{ color: "var(--color-ink-soft)" }}>
@@ -146,7 +185,7 @@ export default function ItineraryPage() {
     );
   }
 
-  if (error || !itin) {
+  if (error || !itin || !day) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-[14px] font-bold" style={{ color: "var(--color-ink)" }}>
@@ -165,8 +204,6 @@ export default function ItineraryPage() {
       </div>
     );
   }
-
-  const day = itin.days.find((d) => d.day === activeDay) ?? itin.days[0];
 
   const handleSwap = async (itemId: string) => {
     if (!backendItineraryId || swapping) return;
@@ -202,6 +239,37 @@ export default function ItineraryPage() {
       setActionError(e instanceof ApiError ? e.message : "일정을 다시 만들지 못했어요. 다시 시도해주세요.");
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const handleCompareRoutes = async () => {
+    if (!backendItineraryId || !day || comparingRoutes) return;
+    setComparingRoutes(true);
+    try {
+      const [car, transit] = await Promise.all([
+        getItineraryRoutes(backendItineraryId, day.day, "CAR"),
+        getItineraryRoutes(backendItineraryId, day.day, "TRANSIT"),
+      ]);
+      setRouteComparison({ CAR: car, TRANSIT: transit });
+    } catch (requestError) {
+      setRoutesError(requestError instanceof ApiError ? requestError.message : "수단을 비교하지 못했어요.");
+    } finally {
+      setComparingRoutes(false);
+    }
+  };
+
+  const handleOpenPlaceDetail = async (item: PlaceItem) => {
+    if (!backendItineraryId || !Number.isFinite(Number(item.id))) return;
+    setPlaceDetail({ item, info: null });
+    setOperationLoading(true);
+    setOperationError(null);
+    try {
+      const info = await getOperationInfo(backendItineraryId, Number(item.id));
+      setPlaceDetail({ item, info });
+    } catch (requestError) {
+      setOperationError(requestError instanceof ApiError ? requestError.message : "운영 정보를 불러오지 못했어요.");
+    } finally {
+      setOperationLoading(false);
     }
   };
 
@@ -331,6 +399,17 @@ export default function ItineraryPage() {
           </p>
         )}
 
+        <ItineraryMobility
+          mode={transportMode}
+          route={routes}
+          loading={routesLoading}
+          error={routesError}
+          comparison={routeComparison}
+          comparing={comparingRoutes}
+          onModeChange={setTransportMode}
+          onCompare={handleCompareRoutes}
+        />
+
         {/* Timeline */}
         <div className="px-5 mt-4 space-y-2.5">
           {day.items.map((item, idx) => {
@@ -340,6 +419,7 @@ export default function ItineraryPage() {
             const showPlaceImage = Boolean(item.imageUrl) && !["transit", "stay"].includes(item.category);
             const hasSupportingText = Boolean(item.description || item.address);
             const canOpenMap = !["transit", "stay"].includes(item.category);
+            const canOpenOperation = !["transit", "stay"].includes(item.category);
             const canReplace = item.replaceable ?? (item.category !== "stay" && item.category !== "transit");
             const mapQuery = encodeURIComponent([item.name, item.address].filter(Boolean).join(" "));
             return (
@@ -408,7 +488,7 @@ export default function ItineraryPage() {
                       📍 {item.address}
                     </p>
                   )}
-                  {(canOpenMap || canReplace) && (
+                  {(canOpenMap || canOpenOperation || canReplace) && (
                     <div className="flex items-center gap-2 mt-1.5">
                       {canOpenMap && (
                         <a
@@ -431,6 +511,15 @@ export default function ItineraryPage() {
                         >
                           카카오맵 ↗
                         </a>
+                      )}
+                      {canOpenOperation && (
+                        <button
+                          onClick={() => handleOpenPlaceDetail(item)}
+                          className="text-[10px] font-bold tap"
+                          style={{ color: "var(--color-accent)" }}
+                        >
+                          운영정보
+                        </button>
                       )}
                     </div>
                   )}
@@ -634,6 +723,58 @@ export default function ItineraryPage() {
             onError={() => setImagePreview(null)}
           />
         )}
+      </Modal>
+
+      <Modal
+        open={Boolean(placeDetail)}
+        onClose={() => {
+          setPlaceDetail(null);
+          setOperationError(null);
+        }}
+        title={placeDetail?.item.name ?? "장소 운영정보"}
+      >
+        <div className="space-y-3">
+          {operationLoading && <p className="text-[12px] font-semibold" style={{ color: "var(--color-ink-muted)" }}>운영 정보를 불러오는 중…</p>}
+          {operationError && <p className="text-[12px] font-semibold" style={{ color: "#c2410c" }}>{operationError}</p>}
+          {!operationLoading && placeDetail?.info && (
+            <>
+              {placeDetail.info.status === "OK" ? (
+                <>
+                  <div className="rounded-2xl px-4 py-3" style={{ background: "var(--color-ivory-warm)" }}>
+                    <p className="text-[10px] font-extrabold" style={{ color: "var(--color-ink-faint)" }}>이용시간</p>
+                    <p className="mt-1 whitespace-pre-line text-[12px] font-semibold leading-relaxed" style={{ color: "var(--color-ink)" }}>{placeDetail.info.useTime ?? "등록된 이용시간이 없어요."}</p>
+                  </div>
+                  <div className="rounded-2xl px-4 py-3" style={{ background: "var(--color-ivory-warm)" }}>
+                    <p className="text-[10px] font-extrabold" style={{ color: "var(--color-ink-faint)" }}>휴무일</p>
+                    <p className="mt-1 whitespace-pre-line text-[12px] font-semibold leading-relaxed" style={{ color: "var(--color-ink)" }}>{placeDetail.info.restDate ?? "등록된 휴무일이 없어요."}</p>
+                  </div>
+                </>
+              ) : (
+                <p className="rounded-2xl px-4 py-3 text-[12px] font-semibold" style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink-soft)" }}>
+                  {placeDetail.info.status === "NOT_SUPPORTED" ? "이 일정 항목은 운영정보 조회 대상이 아니에요." : placeDetail.info.status === "NO_DATA" ? "등록된 운영정보가 없어요." : "운영정보를 불러오지 못했어요."}
+                </p>
+              )}
+              {placeDetail.info.closedDayWarning && (
+                <div className="rounded-2xl px-4 py-3" style={{ background: "var(--color-amber-soft)", color: "#a9570d" }}>
+                  <p className="text-[12px] font-extrabold">⚠ 휴무 가능성</p>
+                  <p className="mt-1 text-[11px] leading-relaxed font-semibold">{placeDetail.info.closedDayWarning.message}</p>
+                  {placeDetail.item.replaceable && (
+                    <button
+                      onClick={() => {
+                        handleSwap(placeDetail.item.id);
+                        setPlaceDetail(null);
+                      }}
+                      className="mt-2 text-[11px] font-extrabold underline underline-offset-2 tap"
+                    >
+                      이 장소 교체하기
+                    </button>
+                  )}
+                </div>
+              )}
+              <p className="text-[9.5px] leading-relaxed" style={{ color: "var(--color-ink-faint)" }}>{placeDetail.info.notice} · {placeDetail.info.source}</p>
+            </>
+          )}
+        </div>
       </Modal>
     </>
   );

@@ -43,6 +43,10 @@ export interface PlaceItem {
   description: string;
   imageUrl?: string | null;
   address?: string | null;
+  /** TourAPI 원본 좌표. 기존에 저장된 일정은 null일 수 있다. */
+  latitude?: number | null;
+  longitude?: number | null;
+  placeId?: number | null;
   /** 서버가 판단한 교체 가능 여부. 없으면 카테고리로 추론한다. */
   replaceable?: boolean;
 }
