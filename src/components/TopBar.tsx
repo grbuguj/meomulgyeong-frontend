@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Icon from "./Icon";
 
 export default function TopBar({
   title,
@@ -25,9 +26,9 @@ export default function TopBar({
             onClick={() => navigate(-1)}
             className="w-9 h-9 rounded-full bg-white card-soft flex items-center justify-center tap"
             aria-label="뒤로가기"
-            style={{ color: "var(--color-ink)", fontSize: 18, fontWeight: 600 }}
+            style={{ color: "var(--color-ink)" }}
           >
-            ‹
+            <Icon name="arrow-left" size={18} />
           </button>
         )}
       </div>

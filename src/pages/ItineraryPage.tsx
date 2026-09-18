@@ -4,6 +4,7 @@ import TopBar from "../components/TopBar";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import ItineraryMobility from "../components/ItineraryMobility";
+import Icon from "../components/Icon";
 import { REGION_MAP } from "../data/regions";
 import type { DayPlan, Itinerary, PlaceItem } from "../types";
 import { useApp } from "../store/AppContext";
@@ -149,14 +150,15 @@ export default function ItineraryPage() {
     () => itin?.days.find((candidate) => candidate.day === activeDay) ?? itin?.days[0] ?? null,
     [itin, activeDay]
   );
+  const activeDayNumber = day?.day;
 
   useEffect(() => {
-    if (!backendItineraryId || !day) return;
+    if (!backendItineraryId || !activeDayNumber) return;
     let cancelled = false;
     setRoutesLoading(true);
     setRoutesError(null);
     setRoutes(null);
-    getItineraryRoutes(backendItineraryId, day.day, transportMode)
+    getItineraryRoutes(backendItineraryId, activeDayNumber, transportMode)
       .then((response) => {
         if (!cancelled) setRoutes(response);
       })
@@ -167,7 +169,7 @@ export default function ItineraryPage() {
         if (!cancelled) setRoutesLoading(false);
       });
     return () => { cancelled = true; };
-  }, [backendItineraryId, day?.day, transportMode]);
+  }, [backendItineraryId, activeDayNumber, transportMode]);
 
   if (!region) {
     return (
@@ -325,7 +327,7 @@ export default function ItineraryPage() {
             disabled={bookmarkLoading || isSaved}
             className="w-9 h-9 rounded-full bg-white card-soft flex items-center justify-center text-base tap"
           >
-            {isSaved ? "🔖" : "📑"}
+            <Icon name={isSaved ? "bookmark" : "calendar"} size={18} />
           </button>
         }
       />

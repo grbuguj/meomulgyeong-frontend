@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
+import Icon, { type IconName } from "../components/Icon";
 import { useApp } from "../store/AppContext";
 
 interface HubCardProps {
-  icon: string;
+  icon: IconName;
   title: string;
   subtitle: string;
   onClick: () => void;
@@ -34,7 +35,7 @@ function HubCard({ icon, title, subtitle, onClick, primary }: HubCardProps) {
           background: primary ? "rgba(255,255,255,0.2)" : "var(--color-ivory-warm)",
         }}
       >
-        {icon}
+        <Icon name={icon} size={20} />
       </div>
       <div className="flex-1 min-w-0">
         <p
@@ -54,7 +55,7 @@ function HubCard({ icon, title, subtitle, onClick, primary }: HubCardProps) {
         className="text-[15px] shrink-0"
         style={{ color: primary ? "white" : "var(--color-ink-faint)" }}
       >
-        →
+        <Icon name="chevron-right" size={18} />
       </span>
     </button>
   );
@@ -85,14 +86,14 @@ export default function HomePage() {
 
         <div className="space-y-2.5">
           <HubCard
-            icon="✨"
+            icon="sparkles"
             title="새 일정 추가하기"
             subtitle="취향 선택부터 시작해요"
             primary
             onClick={() => navigate("/plan")}
           />
           <HubCard
-            icon="🔖"
+            icon="bookmark"
             title="저장한 일정 보기"
             subtitle={
               savedItineraries.length > 0
@@ -102,7 +103,7 @@ export default function HomePage() {
             onClick={() => navigate("/my/saved")}
           />
           <HubCard
-            icon="🗺️"
+            icon="map"
             title="지난 여행 보기"
             subtitle={
               user.trips.length > 0
