@@ -25,7 +25,6 @@ import {
   type TransportMode,
 } from "../lib/itineraryApi";
 import { ApiError } from "../lib/apiClient";
-import { toISODate, today } from "../lib/date";
 
 const CATEGORY_LABEL: Record<string, string> = {
   attraction: "관광",
@@ -72,18 +71,20 @@ export default function ItineraryPage() {
   const { saveItinerary, savedItineraries, completeTrip, user } = useApp();
 
   const region = regionId ? REGION_MAP[regionId] : undefined;
-  const nights = Number(params.get("nights") ?? 1);
   const companionParam = params.get("companion") ?? "SOLO";
   const backendRegionId = Number(params.get("backendRegionId") ?? 0);
   const preferenceTags = (params.get("tags") ?? "").split(",").filter(Boolean);
-  // 캘린더에서 날짜를 고르고 온 경우에만 startDate가 붙는다(예: 지역상세 "일정 만들기"는 아직 없음).
-  // 없으면 오늘 날짜로 시작하는 것으로 취급한다.
-  const startDateParam = params.get("startDate") ?? toISODate(today());
+  // 생성에 필요한 값은 기본값으로 채우지 않는다.
+  // 백엔드는 startDate·nights를 필수로 받고, 생성 후에는 날짜를 바꿀 수단이 없다.
+  // 임의의 날짜로 만들어두면 축제 매칭·날씨·휴무 판정이 전부 엉뚱한 기간 기준으로 동작한다.
+  const nights = Number(params.get("nights") ?? 0);
+  const startDateParam = params.get("startDate");
 
   const [itin, setItin] = useState<Itinerary | null>(null);
   const [backendItineraryId, setBackendItineraryId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [missingDates, setMissingDates] = useState(false);
   const [activeDay, setActiveDay] = useState(1);
   const [completeModal, setCompleteModal] = useState(false);
   const [visitors, setVisitors] = useState(1);
@@ -116,15 +117,24 @@ export default function ItineraryPage() {
 
     // 방금 생성한 일정의 항목은 백엔드가 DB에 flush하기 전 상태로 응답해 itemId가 비어있다
     // (교체 버튼을 누르면 NaN 오류가 남). 생성 직후 한 번 더 조회해 실제 itemId를 받아온다.
-    const load = savedItineraryId
-      ? getItinerary(savedItineraryId)
-      : createItinerary({
-          regionId: backendRegionId,
-          companionType: toBackendCompanion(companionParam),
-          nights,
-          startDate: startDateParam,
-          preferenceTags,
-        }).then((res) => getItinerary(res.itineraryId));
+    let load: Promise<Awaited<ReturnType<typeof getItinerary>>>;
+    if (savedItineraryId) {
+      load = getItinerary(savedItineraryId);
+    } else {
+      // 새로 만드는 경우 날짜·박수가 없으면 요청 자체를 보내지 않는다.
+      if (!startDateParam || nights < 1) {
+        setMissingDates(true);
+        setLoading(false);
+        return;
+      }
+      load = createItinerary({
+        regionId: backendRegionId,
+        companionType: toBackendCompanion(companionParam),
+        nights,
+        startDate: startDateParam,
+        preferenceTags,
+      }).then((res) => getItinerary(res.itineraryId));
+    }
 
     load
       .then((res) => {
@@ -175,6 +185,33 @@ export default function ItineraryPage() {
     return (
       <div className="p-6" style={{ color: "var(--color-ink-soft)" }}>
         지역 정보를 찾을 수 없어요.
+      </div>
+    );
+  }
+
+  if (missingDates) {
+    const query = new URLSearchParams({
+      regionId: region.id,
+      backendRegionId: String(backendRegionId || region.backendId || 0),
+      tags: preferenceTags.join(","),
+    });
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 px-8 text-center">
+        <p className="text-[15px] font-bold" style={{ color: "var(--color-ink)" }}>
+          여행 날짜를 먼저 골라주세요
+        </p>
+        <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--color-ink-soft)" }}>
+          일정은 여행 날짜를 기준으로 축제·날씨·휴무일을 반영해 만들어져요.
+          <br />
+          만든 뒤에는 날짜를 바꿀 수 없어요.
+        </p>
+        <Button
+          variant="accent"
+          className="mt-3"
+          onClick={() => navigate(`/plan?${query.toString()}`, { replace: true })}
+        >
+          날짜 고르기
+        </Button>
       </div>
     );
   }
@@ -319,7 +356,7 @@ export default function ItineraryPage() {
   return (
     <>
       <TopBar
-        title={`${region.shortName} ${nights}박 ${nights + 1}일`}
+        title={`${region.shortName} ${itin.nights}박 ${itin.nights + 1}일`}
         onBack
         right={
           <button
@@ -595,7 +632,7 @@ export default function ItineraryPage() {
       {/* 인쇄 · PDF 저장용 문서 — 화면에는 보이지 않고, 인쇄 시 모든 날짜가 한 번에 출력된다 */}
       <div className="print-sheet">
         <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>
-          {region.name} {nights}박 {nights + 1}일
+          {region.name} {itin.nights}박 {itin.nights + 1}일
         </h1>
         <p style={{ fontSize: 11, marginBottom: 16 }}>{region.identityLine}</p>
 

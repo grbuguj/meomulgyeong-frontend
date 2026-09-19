@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import TagChip from "../components/TagChip";
@@ -7,7 +7,7 @@ import Button from "../components/Button";
 import RegionCard from "../components/RegionCard";
 import StepDots from "../components/StepDots";
 import DateRangeCalendar from "../components/DateRangeCalendar";
-import { REGIONS } from "../data/regions";
+import { REGIONS, REGION_MAP } from "../data/regions";
 import type { Region } from "../types";
 import { useApp } from "../store/AppContext";
 import {
@@ -83,12 +83,21 @@ function toDisplayRegion(rec: RegionRecommendation): Region {
 export default function PlanPage() {
   const { user, setSelection } = useApp();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [step, setStep] = useState<Step>("tags");
+
+  // 지역 상세에서 "이 지역으로 일정 만들기"로 들어온 경우 지역이 이미 정해져 있다.
+  // 이때는 추천 단계를 건너뛰고, 날짜·동행만 받아 곧장 일정을 만든다.
+  const fixedRegion = params.get("regionId") ? REGION_MAP[params.get("regionId")!] : undefined;
+  const fixedBackendRegionId = Number(params.get("backendRegionId") ?? 0);
 
   const [options, setOptions] = useState<TravelOptionsResponse | null>(null);
   const [optionsError, setOptionsError] = useState<string | null>(null);
 
-  const [tagCodes, setTagCodes] = useState<string[]>([]);
+  // 지역 상세에서 넘어온 경우 그 지역의 대표 태그를 미리 골라둔다(사용자가 바꿀 수 있음).
+  const [tagCodes, setTagCodes] = useState<string[]>(() =>
+    (params.get("tags") ?? "").split(",").filter(Boolean).slice(0, 3)
+  );
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [companionCode, setCompanionCode] = useState<string | null>(null);
@@ -115,6 +124,23 @@ export default function PlanPage() {
       if (prev.length >= maxTags) return prev;
       return [...prev, code];
     });
+  };
+
+  /**
+   * 일정 생성 화면으로 이동한다.
+   * 백엔드 POST /api/itineraries는 startDate·nights·preferenceTags·companionType이 모두 필수라,
+   * 여기서 모은 값을 빠짐없이 넘긴다(기본값을 대신 채우지 않는다).
+   */
+  const goToItinerary = (frontendRegionId: string, backendRegionId: number, companion: string) => {
+    if (!startDate || nights < 1) return;
+    const query = new URLSearchParams({
+      startDate,
+      nights: String(nights),
+      companion,
+      backendRegionId: String(backendRegionId),
+      tags: tagCodes.join(","),
+    });
+    navigate(`/itinerary/${frontendRegionId}?${query.toString()}`);
   };
 
   const runMatch = async (finalCompanionCode: string) => {
@@ -153,8 +179,8 @@ export default function PlanPage() {
   return (
     <>
       <TopBar
-        title={step === "result" ? "추천 지역" : "머물;경"}
-        onBack={step !== "tags" && step !== "result"}
+        title={fixedRegion ? `${fixedRegion.name} 일정` : step === "result" ? "추천 지역" : "머물;경"}
+        onBack={Boolean(fixedRegion) || (step !== "tags" && step !== "result")}
         right={
           step !== "tags" ? (
             <button
@@ -183,7 +209,7 @@ export default function PlanPage() {
               className="text-[13px] font-bold mb-2"
               style={{ color: "var(--color-accent)" }}
             >
-              {user.nickname}님, 반가워요 👋
+              {fixedRegion ? `${fixedRegion.name}으로 떠나요` : `${user.nickname}님, 반가워요 👋`}
             </p>
             <h2
               className="text-[27px] font-extrabold mb-1.5 leading-tight tracking-tight"
@@ -303,7 +329,9 @@ export default function PlanPage() {
               className="text-[13px] mb-5 font-medium"
               style={{ color: "var(--color-ink-soft)" }}
             >
-              동행 형태에 맞춰 지역을 추천해드려요
+              {fixedRegion
+                ? "동행 형태에 맞춰 일정을 구성해드려요"
+                : "동행 형태에 맞춰 지역을 추천해드려요"}
             </p>
             <div className="grid grid-cols-2 gap-3">
               {companionOptions.map((c) => {
@@ -345,9 +373,20 @@ export default function PlanPage() {
               variant="accent"
               className="mt-10"
               disabled={!companionCode || matching}
-              onClick={() => companionCode && runMatch(companionCode)}
+              onClick={() => {
+                if (!companionCode) return;
+                if (fixedRegion) {
+                  goToItinerary(fixedRegion.id, fixedBackendRegionId || (fixedRegion.backendId ?? 0), companionCode);
+                  return;
+                }
+                runMatch(companionCode);
+              }}
             >
-              {matching ? "추천 받는 중…" : "지역 추천 받기"}
+              {fixedRegion
+                ? `${fixedRegion.shortName} 일정 만들기`
+                : matching
+                ? "추천 받는 중…"
+                : "지역 추천 받기"}
             </Button>
           </div>
         )}
@@ -381,9 +420,7 @@ export default function PlanPage() {
                 region={toDisplayRegion(rec)}
                 reason={rec.recommendationReason}
                 onClick={() =>
-                  navigate(
-                    `/itinerary/${toDisplayRegion(rec).id}?nights=${nights}&companion=${companionCode}&backendRegionId=${rec.regionId}&tags=${encodeURIComponent(tagCodes.join(","))}&startDate=${startDate}`
-                  )
+                  goToItinerary(toDisplayRegion(rec).id, rec.regionId, companionCode ?? "SOLO")
                 }
               />
             ))}

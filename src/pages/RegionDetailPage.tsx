@@ -161,11 +161,14 @@ export default function RegionDetailPage() {
           variant="accent"
           fullWidth
           onClick={() => {
-            const tags = toPreferenceTags(region.tags);
-            navigate(
-              `/itinerary/${region.id}?nights=2&companion=SOLO&backendRegionId=${region.backendId}` +
-                `&tags=${encodeURIComponent(tags.join(","))}`
-            );
+            // 날짜·박수·동행은 사용자가 직접 골라야 한다(백엔드 필수값이고, 생성 후에는 바꿀 수 없다).
+            // 지역만 고정한 채 일정 조건 입력 화면으로 보낸다.
+            const query = new URLSearchParams({
+              regionId: region.id,
+              backendRegionId: String(region.backendId ?? 0),
+              tags: toPreferenceTags(region.tags).join(","),
+            });
+            navigate(`/plan?${query.toString()}`);
           }}
         >
           이 지역으로 일정 만들기
