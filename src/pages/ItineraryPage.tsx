@@ -51,6 +51,78 @@ function weatherText(weather: DayPlan["weather"]): string {
 }
 
 /**
+ * 숫자 입력 필드.
+ * 값을 숫자로만 들고 있으면 지웠을 때 곧바로 0으로 되돌아가 수정이 어렵다.
+ * 입력 중에는 문자열 초안을 그대로 두고, 포커스가 빠질 때 범위에 맞춰 정리한다.
+ */
+function NumberField({
+  label,
+  hint,
+  value,
+  onChange,
+  min = 0,
+  max,
+  step,
+  unit,
+}: {
+  label: string;
+  hint?: string;
+  value: number;
+  onChange: (next: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
+}) {
+  const [draft, setDraft] = useState(String(value));
+
+  const clamp = (n: number) => Math.max(min, max === undefined ? n : Math.min(n, max));
+
+  return (
+    <div>
+      <label className="text-[12px] font-bold block mb-1.5" style={{ color: "var(--color-ink-soft)" }}>
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          step={step}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            const next = Number(e.target.value);
+            if (e.target.value !== "" && Number.isFinite(next)) onChange(clamp(next));
+          }}
+          onBlur={() => {
+            const next = draft === "" || !Number.isFinite(Number(draft)) ? min : clamp(Number(draft));
+            onChange(next);
+            setDraft(String(next));
+          }}
+          className={`w-full rounded-2xl px-4 py-3 outline-none font-semibold ${unit ? "pr-12" : ""}`}
+          style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink)" }}
+        />
+        {unit && (
+          <span
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-[12.5px] font-semibold pointer-events-none"
+            style={{ color: "var(--color-ink-faint)" }}
+          >
+            {unit}
+          </span>
+        )}
+      </div>
+      {hint && (
+        <p className="text-[10.5px] mt-1.5" style={{ color: "var(--color-ink-faint)" }}>
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * 출처·한계 고지.
  * 관광 정보와 예보는 원본이 바뀌거나 현장과 다를 수 있어, 화면과 인쇄본 양쪽에 함께 표기한다.
  */
@@ -68,7 +140,7 @@ export default function ItineraryPage() {
   const { regionId } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { saveItinerary, savedItineraries, completeTrip, user } = useApp();
+  const { saveItinerary, removeSavedItinerary, savedItineraries, completeTrip, user } = useApp();
 
   const region = regionId ? REGION_MAP[regionId] : undefined;
   const companionParam = params.get("companion") ?? "SOLO";
@@ -320,17 +392,24 @@ export default function ItineraryPage() {
     }
   };
 
-  const handleSave = async () => {
-    if (!backendItineraryId) return;
-    if (isSaved) return;
+  const handleToggleSave = async () => {
+    if (!backendItineraryId || bookmarkLoading) return;
     setBookmarkLoading(true);
     setActionError(null);
     try {
-      await bookmarkItinerary(backendItineraryId);
-      saveItinerary(itin);
-      setSavedNotice(true);
+      if (isSaved) {
+        await removeSavedItinerary(itin.id, backendItineraryId);
+        setSavedNotice(false);
+      } else {
+        await bookmarkItinerary(backendItineraryId);
+        saveItinerary(itin);
+        setSavedNotice(true);
+      }
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : "일정을 저장하지 못했어요. 다시 시도해주세요.");
+      const fallback = isSaved
+        ? "저장을 해제하지 못했어요. 다시 시도해주세요."
+        : "일정을 저장하지 못했어요. 다시 시도해주세요.";
+      setActionError(e instanceof ApiError ? e.message : fallback);
     } finally {
       setBookmarkLoading(false);
     }
@@ -369,10 +448,11 @@ export default function ItineraryPage() {
         onBack
         right={
           <button
-            onClick={handleSave}
-            disabled={bookmarkLoading || isSaved}
-            aria-label={isSaved ? "저장된 일정" : "일정 저장하기"}
-            title={isSaved ? "저장됨 · 마이페이지에서 볼 수 있어요" : "일정 저장하기"}
+            onClick={handleToggleSave}
+            disabled={bookmarkLoading}
+            aria-pressed={isSaved}
+            aria-label={isSaved ? "저장 해제하기" : "일정 저장하기"}
+            title={isSaved ? "저장됨 · 누르면 저장 해제" : "일정 저장하기"}
             className="w-9 h-9 rounded-full flex items-center justify-center tap"
             style={
               isSaved
@@ -713,65 +793,28 @@ export default function ItineraryPage() {
       {/* Complete modal */}
       <Modal open={completeModal} onClose={() => setCompleteModal(false)} title="여행을 완료했어요 🎉">
         <div className="space-y-4">
-          <div>
-            <label
-              className="text-[12px] font-bold block mb-1.5"
-              style={{ color: "var(--color-ink-soft)" }}
-            >
-              머문 일자 (일)
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={itin.days.length}
-              value={stayDays}
-              onChange={(e) => setStayDays(Number(e.target.value))}
-              className="w-full rounded-2xl px-4 py-3 outline-none font-semibold"
-              style={{
-                background: "var(--color-ivory-warm)",
-                color: "var(--color-ink)",
-              }}
-            />
-          </div>
-          <div>
-            <label
-              className="text-[12px] font-bold block mb-1.5"
-              style={{ color: "var(--color-ink-soft)" }}
-            >
-              방문 인원 (명)
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={visitors}
-              onChange={(e) => setVisitors(Number(e.target.value))}
-              className="w-full rounded-2xl px-4 py-3 outline-none font-semibold"
-              style={{
-                background: "var(--color-ivory-warm)",
-                color: "var(--color-ink)",
-              }}
-            />
-          </div>
-          <div>
-            <label
-              className="text-[12px] font-bold block mb-1.5"
-              style={{ color: "var(--color-ink-soft)" }}
-            >
-              쓴 금액 (원)
-            </label>
-            <input
-              type="number"
-              min={0}
-              step={1000}
-              value={totalSpent}
-              onChange={(e) => setTotalSpent(Math.max(Number(e.target.value), 0))}
-              className="w-full rounded-2xl px-4 py-3 outline-none font-semibold"
-              style={{
-                background: "var(--color-ivory-warm)",
-                color: "var(--color-ink)",
-              }}
-            />
-          </div>
+          <NumberField
+            label="머문 일자"
+            unit="일"
+            min={1}
+            max={itin.days.length}
+            value={stayDays}
+            onChange={setStayDays}
+          />
+          <NumberField label="방문 인원" unit="명" min={1} value={visitors} onChange={setVisitors} />
+          <NumberField
+            label="쓴 금액"
+            unit="원"
+            min={0}
+            step={10000}
+            value={totalSpent}
+            onChange={setTotalSpent}
+            hint={
+              totalSpent > 0
+                ? `${totalSpent.toLocaleString("ko-KR")}원 · 지역 소비로 집계돼요`
+                : "숙박·식사·체험에 쓴 금액을 적으면 지역 소비로 집계돼요"
+            }
+          />
           {actionError && (
             <p className="text-[12px] font-semibold" style={{ color: "#c2410c" }}>
               {actionError}
