@@ -5,6 +5,7 @@ import Button from "../components/Button";
 import StatTile from "../components/StatTile";
 import { LogoMark } from "../components/Logo";
 import Stamp from "../components/Stamp";
+import RegionArt from "../components/RegionArt";
 import { REGION_MAP } from "../data/regions";
 import { calcContribution, MINIMUM_STAY_HOURS_PER_DAY } from "../lib/contribution";
 import type { Itinerary, TripCompletion } from "../types";
@@ -101,22 +102,44 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
     <>
       <TopBar title="이번 여행이 남긴 자국" onBack />
       <div className="flex-1 overflow-y-auto px-5 py-5 pb-10">
-        {/* 도장이 찍히는 순간 — 여행을 마쳤다는 걸 숫자보다 먼저 보여준다 */}
-        <div className="flex flex-col items-center pt-2 pb-6">
-          <Stamp
-            seed={region.id}
-            label={region.shortName}
-            collected
-            size={104}
-            pressing
-            visitCount={visitCount}
+        {/* 도장이 찍히는 순간 — 여행을 마쳤다는 걸 숫자보다 먼저 보여준다.
+            어디를 다녀왔는지 글자보다 사진이 빠르게 읽히므로 뒤에 지역 사진을 깐다. */}
+        <div className="relative rounded-[26px] overflow-hidden mb-6">
+          {/* 사진은 배경으로 깔고, 높이는 안쪽 내용이 정한다 */}
+          <div className="absolute inset-0">
+            <RegionArt region={region} className="h-full" label={false} />
+          </div>
+          <div
+            className="absolute inset-0"
+            // 아래쪽 문구만 읽히면 되므로, 사진이 가려지지 않을 만큼만 어둡게 깐다
+            style={{
+              background:
+                "linear-gradient(to top, rgba(12,20,34,0.78) 0%, rgba(12,20,34,0.28) 46%, rgba(12,20,34,0.04) 100%)",
+            }}
           />
-          <p
-            className="text-[12.5px] font-bold mt-4 animate-in"
-            style={{ color: "var(--color-accent-dark)", animationDelay: "0.6s" }}
-          >
-            {visitCount > 1 ? `${region.shortName} ${visitCount}번째 도장` : `${region.shortName} 첫 도장을 찍었어요`}
-          </p>
+          <div className="relative flex flex-col items-center pt-7 pb-6">
+            <div
+              className="rounded-full"
+              style={{ background: "rgba(255,255,255,0.94)", padding: 6 }}
+            >
+              <Stamp
+                seed={region.id}
+                label={region.shortName}
+                collected
+                size={100}
+                pressing
+                visitCount={visitCount}
+              />
+            </div>
+            <p
+              className="text-[13px] font-extrabold mt-4 text-white animate-in"
+              style={{ animationDelay: "0.6s" }}
+            >
+              {visitCount > 1
+                ? `${region.shortName} ${visitCount}번째 도장`
+                : `${region.shortName} 첫 도장을 찍었어요`}
+            </p>
+          </div>
         </div>
 
         {/* Header */}
@@ -200,31 +223,16 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
           >
             경상북도 15개 지역 수집 배지
           </p>
-          <div className="grid grid-cols-5 gap-2">
-            {Object.values(REGION_MAP).map((r) => {
-              const done = user.stamps.includes(r.id);
-              return (
-                <div
-                  key={r.id}
-                  className="aspect-square rounded-xl flex items-center justify-center text-[10px] font-bold"
-                  title={r.shortName}
-                  style={
-                    done
-                      ? {
-                          background: "linear-gradient(135deg, #3b82f6, var(--color-accent-dark))",
-                          color: "white",
-                          boxShadow: "0 4px 10px -4px rgba(43,108,224,0.5)",
-                        }
-                      : {
-                          background: "var(--color-ivory-warm)",
-                          color: "var(--color-ink-faint)",
-                        }
-                  }
-                >
-                  {r.shortName}
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-5 gap-y-3 justify-items-center">
+            {Object.values(REGION_MAP).map((r) => (
+              <Stamp
+                key={r.id}
+                seed={r.id}
+                label={r.shortName}
+                collected={user.stamps.includes(r.id)}
+                size={48}
+              />
+            ))}
           </div>
           <p
             className="text-[12px] font-semibold mt-3"

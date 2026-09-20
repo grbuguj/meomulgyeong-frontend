@@ -131,11 +131,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
               resolveFrontendRegionId(summary.region.regionName, summary.region.regionId)
             )
           );
-          setSavedItineraries((prev) => {
-            const serverIds = new Set(mapped.map((i) => i.id));
-            const localOnly = prev.filter((i) => !serverIds.has(i.id));
-            return [...mapped.map((i) => ({ ...i, savedAt: i.savedAt ?? new Date().toISOString() })), ...localOnly];
-          });
+          // 북마크는 서버가 기준이다. 로컬에 남은 항목을 합쳐두면 같은 브라우저에서
+          // 다른 계정으로 로그인했을 때 앞 사용자의 일정이 그대로 보이고,
+          // 열어보면 접근 권한이 없다는 오류가 난다.
+          setSavedItineraries(
+            mapped.map((i) => ({ ...i, savedAt: i.savedAt ?? new Date().toISOString() }))
+          );
         })
         .catch(() => {/* 서버 동기화 실패 — 로컬 캐시 유지 */});
 
@@ -195,6 +196,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setHasOnboarded(false);
     setUser(initialUser);
     setSavedItineraries([]);
+    // 여행 캐시도 함께 비운다. 남겨두면 다음에 로그인한 계정 화면에 잠깐 비쳤다가 사라진다.
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // storage unavailable — 메모리 상태만 비운 것으로 충분하다
+    }
   };
 
   const completeOnboarding = async (nickname: string) => {
