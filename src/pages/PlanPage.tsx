@@ -81,44 +81,75 @@ function toDisplayRegion(rec: RegionRecommendation): Region {
   };
 }
 
+/** 받침 유무에 따라 조사를 고른다. 한글 음절은 유니코드상 28개 종성 단위로 배열돼 있다. */
+function josa(word: string, withFinal: string, withoutFinal: string): string {
+  const last = word.trim().slice(-1);
+  const code = last.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return withoutFinal;
+  return (code - 0xac00) % 28 > 0 ? withFinal : withoutFinal;
+}
+
 /**
  * 추천 근거 문장.
  * 서버가 주는 recommendationReason은 지역 설명이라 "내가 고른 조건과 왜 맞는지"가 드러나지 않는다.
- * 사용자가 실제로 고른 취향·기간·동행을 되짚어, 이 지역이 뽑힌 이유를 한 문단으로 풀어준다.
+ *
+ * 순위별로 같은 틀에 단어만 바꿔 넣으면 세 장이 똑같이 읽히므로,
+ * 추천마다 실제로 다른 점(취향이 몇 개 맞았는지, 기간이 넉넉한지, 어떤 장소가 있는지)을
+ * 골라 문장의 구조 자체를 다르게 만든다.
  */
 function buildMatchStory(
   rec: RegionRecommendation,
   input: {
     nickname: string;
     tagLabels: Map<string, string>;
+    selectedTagCount: number;
     companionLabel: string;
     nights: number;
   }
 ): { headline: string; body: string } {
   const matched = rec.matchedTags.map((code) => input.tagLabels.get(code) ?? code).filter(Boolean);
-  const places = rec.representativePlaces.slice(0, 2);
+  const [firstPlace, secondPlace] = rec.representativePlaces;
   const name = rec.regionName;
+  const short = name.replace(/(시|군)$/, "");
+  const withCompanion = `${input.companionLabel}${josa(input.companionLabel, "과", "와")}`;
+  const nightsText = `${input.nights}박 ${input.nights + 1}일`;
+  const allMatched = matched.length > 0 && matched.length >= input.selectedTagCount;
 
-  const headline =
-    rec.rank === 1
-      ? `${input.nickname}님 조건과 가장 많이 겹쳤어요`
-      : matched.length > 0
-      ? `${matched[0]}을(를) 좋아한다면 여기도`
-      : `조금 다른 결의 선택지`;
+  // 전부 맞은 경우 — 취향 일치를 앞세운다
+  if (allMatched) {
+    return {
+      headline: `고른 ${matched.length}가지가 전부 맞았어요`,
+      body:
+        `${matched.join("도 ")}도 ${short}${josa(short, "이", "가")} 잘하는 것들이에요. ` +
+        (firstPlace
+          ? `${firstPlace}${josa(firstPlace, "은", "는")} ${withCompanion} 가기 특히 좋고요.`
+          : `${rec.identityStatement}.`),
+    };
+  }
 
-  const tagPart =
-    matched.length > 0
-      ? `고르신 ${matched.join(" · ")}${matched.length > 1 ? " 모두" : ""} ${name}과 맞닿아 있어요.`
-      : `${name}은 ${rec.identityStatement}이라, 고르신 결과 살짝 다르지만 함께 보면 좋은 곳이에요.`;
+  // 일부만 맞은 경우 — 기간과 동선을 앞세운다
+  if (matched.length > 0) {
+    const roomy = input.nights >= 3;
+    return {
+      headline: roomy ? `${nightsText}이면 넉넉해요` : `짧게 다녀오기 좋아요`,
+      body:
+        `${matched.join(" · ")} 쪽으로 맞췄어요. ` +
+        (roomy
+          ? `${withCompanion} ${nightsText}이면 ${firstPlace ?? short}에서 하루를 통째로 써도 돼요.`
+          : `${nightsText}에 맞춰 ${firstPlace ?? short} 근처로 동선을 좁혔어요.`) +
+        (secondPlace ? ` ${secondPlace}까지 붙이면 딱 맞습니다.` : ""),
+    };
+  }
 
-  const stayPart =
-    input.nights >= 3
-      ? `${input.companionLabel} 떠나는 ${input.nights}박 ${input.nights + 1}일이면 서두르지 않아도 되는 길이예요.`
-      : `${input.companionLabel} 떠나는 ${input.nights}박 ${input.nights + 1}일에 맞춰 동선을 좁혀 담았어요.`;
-
-  const placePart = places.length > 0 ? ` ${places.join("과 ")}부터 시작하면 좋아요.` : "";
-
-  return { headline, body: `${tagPart} ${stayPart}${placePart}` };
+  // 겹치는 취향이 없는 경우 — 왜 그래도 추천했는지를 말한다
+  return {
+    headline: `고른 조건 밖이지만 한 번 보세요`,
+    body:
+      `${rec.identityStatement}. ` +
+      `${input.nickname}님이 고른 취향과 직접 겹치진 않지만, ` +
+      `${withCompanion} 가는 ${nightsText}에는 이런 결도 잘 맞아요.` +
+      (firstPlace ? ` ${firstPlace}부터 둘러보면 좋습니다.` : ""),
+  };
 }
 
 export default function PlanPage() {
@@ -464,6 +495,7 @@ export default function PlanPage() {
               const story = buildMatchStory(rec, {
                 nickname: user.nickname,
                 tagLabels: tagLabelMap,
+                selectedTagCount: tagCodes.length,
                 companionLabel: selectedCompanionLabel,
                 nights,
               });
