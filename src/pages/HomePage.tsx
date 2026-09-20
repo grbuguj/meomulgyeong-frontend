@@ -110,115 +110,97 @@ export default function HomePage() {
           어디로 떠나볼까요?
         </h2>
 
-        {/* 누적 기여 — 완료할수록 쌓이는 값이라 홈에 두어야 계속 쌓고 싶어진다 */}
-        {hasTrips ? (
-          <div
-            className="mx-5 rounded-[24px] p-5"
-            style={{
-              background: "linear-gradient(140deg, #3b82f6 0%, var(--color-accent-dark) 100%)",
-              boxShadow: "0 12px 30px -12px rgba(43,108,224,0.55)",
-            }}
-          >
-            <p className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.8)" }}>
-              {user.nickname}님이 경북에서
-            </p>
-            <p className="text-[15px] font-bold text-white mt-1.5">머문 날</p>
-            <p className="text-[46px] font-extrabold text-white leading-none mt-0.5">
-              {totals.populationDays.toLocaleString("ko-KR")}
-              <span className="text-[20px] ml-1.5">일</span>
-            </p>
-            <div
-              className="grid grid-cols-3 gap-2 mt-4 pt-3.5"
-              style={{ borderTop: "1px solid rgba(255,255,255,0.22)" }}
-            >
-              {[
-                ["다녀온 여행", `${user.trips.length}번`],
-                ["다녀온 지역", `${user.stamps.length}곳`],
-                ["쓴 금액", `${(totals.spending / 10000).toFixed(0)}만원`],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>
-                    {label}
-                  </p>
-                  <p className="text-[14px] font-extrabold text-white mt-0.5">{value}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-[9.5px] leading-snug mt-3" style={{ color: "rgba(255,255,255,0.62)" }}>
-              머문 날은 그 지역의 생활인구로 집계돼요 · 행정안전부 기준
-            </p>
-          </div>
-        ) : (
-          <div
-            className="mx-5 rounded-[24px] p-5"
-            style={{ background: "var(--color-accent-soft)" }}
-          >
-            <p className="text-[14px] font-extrabold" style={{ color: "var(--color-accent-dark)" }}>
-              아직 머문 날이 없어요
-            </p>
-            <p className="text-[12px] leading-relaxed mt-1.5" style={{ color: "var(--color-ink-soft)" }}>
-              첫 여행을 다녀오면 머문 날이 여기에 쌓여요. 하루 3시간만 머물러도 그 지역에 기록됩니다.
-            </p>
-          </div>
-        )}
-
-        {/* 다 같이 쌓은 기록 — 내 기록만 보면 혼자 하는 일 같지만, 합계를 보면 규모가 읽힌다 */}
-        {stats && stats.totalTrips > 0 && (
-          <div
-            className="mx-5 mt-2.5 rounded-[22px] p-4"
-            style={{
-              background: "white",
-              boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.09)",
-            }}
-          >
-            <div className="flex items-baseline justify-between">
-              <p className="text-[13px] font-extrabold" style={{ color: "var(--color-ink)" }}>
-                다 같이 경북에 머문 날
+        {/* 누적 기여 — 내 기록과 다 같이 쌓은 기록을 한 장에 담는다.
+            따로 두면 첫 화면에 카드가 너무 많아진다. */}
+        <div
+          className="mx-5 rounded-[24px] p-5"
+          style={{
+            background: "linear-gradient(140deg, #3b82f6 0%, var(--color-accent-dark) 100%)",
+            boxShadow: "0 12px 30px -12px rgba(43,108,224,0.55)",
+          }}
+        >
+          {hasTrips ? (
+            <>
+              <p className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.8)" }}>
+                {user.nickname}님이 경북에서
               </p>
-              <p className="text-[16px] font-extrabold" style={{ color: "var(--color-accent)" }}>
-                {stats.totalPopulationContributionDays.toLocaleString("ko-KR")}일
+              <p className="text-[15px] font-bold text-white mt-1.5">머문 날</p>
+              <p className="text-[46px] font-extrabold text-white leading-none mt-0.5">
+                {totals.populationDays.toLocaleString("ko-KR")}
+                <span className="text-[20px] ml-1.5">일</span>
               </p>
-            </div>
-            <p className="text-[11px] mt-1" style={{ color: "var(--color-ink-faint)" }}>
-              {`${stats.totalTravelers.toLocaleString("ko-KR")}명이 ${stats.totalTrips.toLocaleString("ko-KR")}번 다녀가 ${Math.round(stats.totalSpending / 10000).toLocaleString("ko-KR")}만원을 썼어요`}
-            </p>
-
-            {stats.topRegions.length > 0 && (
-              <div className="mt-3 pt-3 space-y-2" style={{ borderTop: "1px solid var(--color-line-soft)" }}>
-                <p className="text-[11px] font-bold" style={{ color: "var(--color-ink-muted)" }}>
-                  가장 많이 머문 곳
-                </p>
-                {stats.topRegions.slice(0, 3).map((entry) => {
-                  const local = REGIONS.find((r) => r.backendId === entry.regionId);
-                  return (
-                    <button
-                      key={entry.regionId}
-                      onClick={() => local && navigate(`/region/${local.id}`)}
-                      className="w-full flex items-center gap-2.5 tap text-left"
-                    >
-                      <span
-                        className="w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-extrabold"
-                        style={
-                          entry.rank === 1
-                            ? { background: "var(--color-accent)", color: "white" }
-                            : { background: "var(--color-ivory-warm)", color: "var(--color-ink-muted)" }
-                        }
-                      >
-                        {entry.rank}
-                      </span>
-                      <span className="flex-1 text-[13px] font-bold truncate" style={{ color: "var(--color-ink)" }}>
-                        {entry.regionName}
-                      </span>
-                      <span className="text-[11.5px] font-semibold" style={{ color: "var(--color-ink-faint)" }}>
-                        {entry.populationContributionDays.toLocaleString("ko-KR")}일
-                      </span>
-                    </button>
-                  );
-                })}
+              <div
+                className="grid grid-cols-3 gap-2 mt-4 pt-3.5"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.22)" }}
+              >
+                {[
+                  ["다녀온 여행", `${user.trips.length}번`],
+                  ["다녀온 지역", `${user.stamps.length}곳`],
+                  ["쓴 금액", `${(totals.spending / 10000).toFixed(0)}만원`],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>
+                      {label}
+                    </p>
+                    <p className="text-[14px] font-extrabold text-white mt-0.5">{value}</p>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-        )}
+            </>
+          ) : (
+            <>
+              <p className="text-[15px] font-extrabold text-white">아직 머문 날이 없어요</p>
+              <p className="text-[12px] leading-relaxed mt-1.5" style={{ color: "rgba(255,255,255,0.82)" }}>
+                첫 여행을 다녀오면 머문 날이 여기에 쌓여요. 하루 3시간만 머물러도 그 지역에 기록됩니다.
+              </p>
+            </>
+          )}
+
+          {/* 다 같이 쌓은 기록 — 내 기록만 보면 혼자 하는 일 같지만, 합계를 보면 규모가 읽힌다 */}
+          {stats && stats.totalTrips > 0 && (
+            <div className="mt-4 rounded-[16px] p-3.5" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <div className="flex items-baseline justify-between">
+                <p className="text-[12px] font-bold text-white">다 같이 머문 날</p>
+                <p className="text-[17px] font-extrabold text-white">
+                  {stats.totalPopulationContributionDays.toLocaleString("ko-KR")}일
+                </p>
+              </div>
+              <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.72)" }}>
+                {`${stats.totalTravelers.toLocaleString("ko-KR")}명이 ${stats.totalTrips.toLocaleString("ko-KR")}번 다녀가 ${Math.round(stats.totalSpending / 10000).toLocaleString("ko-KR")}만원을 썼어요`}
+              </p>
+
+              {stats.topRegions.length > 0 && (
+                <div className="flex gap-1.5 mt-3">
+                  {stats.topRegions.slice(0, 3).map((entry) => {
+                    const local = REGIONS.find((r) => r.backendId === entry.regionId);
+                    return (
+                      <button
+                        key={entry.regionId}
+                        onClick={() => local && navigate(`/region/${local.id}`)}
+                        className="flex-1 min-w-0 rounded-xl px-2 py-1.5 text-left tap"
+                        style={{ background: "rgba(255,255,255,0.16)" }}
+                      >
+                        <p className="text-[9.5px] font-bold" style={{ color: "rgba(255,255,255,0.7)" }}>
+                          {entry.rank}위
+                        </p>
+                        <p className="text-[12px] font-extrabold text-white truncate mt-0.5">
+                          {entry.regionName}
+                        </p>
+                        <p className="text-[9.5px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>
+                          {entry.populationContributionDays.toLocaleString("ko-KR")}일
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          <p className="text-[9.5px] leading-snug mt-3" style={{ color: "rgba(255,255,255,0.62)" }}>
+            머문 날은 그 지역의 생활인구로 집계돼요 · 행정안전부 기준
+          </p>
+        </div>
 
         {/* 스탬프 진행 */}
         <button
