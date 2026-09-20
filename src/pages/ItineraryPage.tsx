@@ -25,6 +25,7 @@ import {
   type TransportMode,
 } from "../lib/itineraryApi";
 import { ApiError } from "../lib/apiClient";
+import { ESTIMATED_SPEND_PER_PERSON_DAY } from "../lib/contribution";
 
 const CATEGORY_LABEL: Record<string, string> = {
   attraction: "관광",
@@ -228,6 +229,10 @@ export default function ItineraryPage() {
     () => (itin ? savedItineraries.some((i) => i.id === itin.id) : false),
     [savedItineraries, itin]
   );
+
+  // 금액을 기억 못 하는 경우가 많아 한국관광공사 1인 1일 평균 지출액 기준 예상액을 제안한다.
+  // 기본값으로 밀어 넣지는 않는다 — 실제로 쓴 값이 아닌 수치가 기여도로 집계되면 안 된다.
+  const suggestedSpend = stayDays * visitors * ESTIMATED_SPEND_PER_PERSON_DAY;
 
   // 저장 확인 문구는 잠시만 띄운다. 저장 여부 자체는 상단 북마크 버튼 색으로 계속 보인다.
   useEffect(() => {
@@ -802,19 +807,30 @@ export default function ItineraryPage() {
             onChange={setStayDays}
           />
           <NumberField label="방문 인원" unit="명" min={1} value={visitors} onChange={setVisitors} />
-          <NumberField
-            label="쓴 금액"
-            unit="원"
-            min={0}
-            step={10000}
-            value={totalSpent}
-            onChange={setTotalSpent}
-            hint={
-              totalSpent > 0
-                ? `${totalSpent.toLocaleString("ko-KR")}원 · 지역 소비로 집계돼요`
-                : "숙박·식사·체험에 쓴 금액을 적으면 지역 소비로 집계돼요"
-            }
-          />
+          <div>
+            <NumberField
+              label="쓴 금액"
+              unit="원"
+              min={0}
+              step={10000}
+              value={totalSpent}
+              onChange={setTotalSpent}
+              hint={
+                totalSpent > 0
+                  ? `${totalSpent.toLocaleString("ko-KR")}원 · 지역 소비로 집계돼요`
+                  : "숙박·식사·체험에 쓴 금액이에요. 기억이 안 나면 아래 예상액을 눌러주세요."
+              }
+            />
+            {suggestedSpend > 0 && totalSpent !== suggestedSpend && (
+              <button
+                onClick={() => setTotalSpent(suggestedSpend)}
+                className="mt-2 rounded-full px-3.5 py-2 text-[11.5px] font-bold tap"
+                style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
+              >
+                예상 {Math.round(suggestedSpend / 10000)}만원으로 채우기
+              </button>
+            )}
+          </div>
           {actionError && (
             <p className="text-[12px] font-semibold" style={{ color: "#c2410c" }}>
               {actionError}

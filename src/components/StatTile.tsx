@@ -2,12 +2,15 @@ export default function StatTile({
   label,
   value,
   unit,
+  note,
   accent,
   tone = "accent",
 }: {
   label: string;
   value: string | number;
   unit?: string;
+  /** 숫자만으로는 크기를 가늠하기 어려워, 비교 기준을 한 줄로 덧붙인다. */
+  note?: string;
   accent?: boolean;
   tone?: "accent" | "mint" | "amber" | "forest";
 }) {
@@ -37,7 +40,7 @@ export default function StatTile({
 
   return (
     <div
-      className="rounded-3xl p-4"
+      className="rounded-3xl p-3.5"
       style={{
         background: accent ? t.gradSolid : t.bg,
         color: accent ? "#fff" : "var(--color-ink)",
@@ -52,12 +55,18 @@ export default function StatTile({
       >
         {label}
       </p>
-      <p className="text-[27px] font-extrabold mt-1 tracking-tight leading-none">
+      <p className="text-[23px] font-extrabold mt-1 tracking-tight leading-none">
         {value}
-        {unit && (
-          <span className="text-[13px] font-semibold ml-1.5 opacity-80">{unit}</span>
-        )}
+        {unit && <span className="text-[11.5px] font-semibold ml-1 opacity-80">{unit}</span>}
       </p>
+      {note && (
+        <p
+          className="text-[9.5px] font-semibold mt-1.5 leading-snug"
+          style={{ color: accent ? "rgba(255,255,255,0.75)" : t.text, opacity: accent ? 1 : 0.75 }}
+        >
+          {note}
+        </p>
+      )}
     </div>
   );
 }

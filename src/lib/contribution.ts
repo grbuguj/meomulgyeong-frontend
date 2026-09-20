@@ -7,6 +7,13 @@ const PER_DAY_SPEND = {
   activity: 18000,
 };
 
+/** 1인 1일 예상 지출액. 완료 입력 화면에서 금액을 제안할 때도 같은 기준을 쓴다. */
+export const ESTIMATED_SPEND_PER_PERSON_DAY =
+  PER_DAY_SPEND.lodging + PER_DAY_SPEND.food + PER_DAY_SPEND.activity;
+
+/** 행안부 「인구감소지역 지원 특별법」 시행령상 생활인구 산입 최소 체류시간(하루 기준) */
+export const MINIMUM_STAY_HOURS_PER_DAY = 3;
+
 /**
  * 여행 결과 기반 지역 기여도 산출
  * - 예상 소비 금액 = (숙박+식음료+체험 단가) × 활동 수 × 체류일수
