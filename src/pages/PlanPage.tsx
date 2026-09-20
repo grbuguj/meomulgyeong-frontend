@@ -7,6 +7,7 @@ import Button from "../components/Button";
 import RegionCard from "../components/RegionCard";
 import StepDots from "../components/StepDots";
 import DateRangeCalendar from "../components/DateRangeCalendar";
+import Icon from "../components/Icon";
 import { REGIONS, REGION_MAP } from "../data/regions";
 import type { Region } from "../types";
 import { useApp } from "../store/AppContext";
@@ -78,6 +79,46 @@ function toDisplayRegion(rec: RegionRecommendation): Region {
     isVerifiedHub: false,
     representativeSpots: rec.representativePlaces,
   };
+}
+
+/**
+ * 추천 근거 문장.
+ * 서버가 주는 recommendationReason은 지역 설명이라 "내가 고른 조건과 왜 맞는지"가 드러나지 않는다.
+ * 사용자가 실제로 고른 취향·기간·동행을 되짚어, 이 지역이 뽑힌 이유를 한 문단으로 풀어준다.
+ */
+function buildMatchStory(
+  rec: RegionRecommendation,
+  input: {
+    nickname: string;
+    tagLabels: Map<string, string>;
+    companionLabel: string;
+    nights: number;
+  }
+): { headline: string; body: string } {
+  const matched = rec.matchedTags.map((code) => input.tagLabels.get(code) ?? code).filter(Boolean);
+  const places = rec.representativePlaces.slice(0, 2);
+  const name = rec.regionName;
+
+  const headline =
+    rec.rank === 1
+      ? `${input.nickname}님 조건과 가장 많이 겹쳤어요`
+      : matched.length > 0
+      ? `${matched[0]}을(를) 좋아한다면 여기도`
+      : `조금 다른 결의 선택지`;
+
+  const tagPart =
+    matched.length > 0
+      ? `고르신 ${matched.join(" · ")}${matched.length > 1 ? " 모두" : ""} ${name}과 맞닿아 있어요.`
+      : `${name}은 ${rec.identityStatement}이라, 고르신 결과 살짝 다르지만 함께 보면 좋은 곳이에요.`;
+
+  const stayPart =
+    input.nights >= 3
+      ? `${input.companionLabel} 떠나는 ${input.nights}박 ${input.nights + 1}일이면 서두르지 않아도 되는 길이예요.`
+      : `${input.companionLabel} 떠나는 ${input.nights}박 ${input.nights + 1}일에 맞춰 동선을 좁혀 담았어요.`;
+
+  const placePart = places.length > 0 ? ` ${places.join("과 ")}부터 시작하면 좋아요.` : "";
+
+  return { headline, body: `${tagPart} ${stayPart}${placePart}` };
 }
 
 export default function PlanPage() {
@@ -175,6 +216,11 @@ export default function PlanPage() {
 
   const companionOptions: OptionItem[] = options?.companionTypes ?? [];
   const tagOptions: OptionItem[] = options?.preferenceTags ?? [];
+
+  // 추천 근거 문장에서 서버 코드(NATURE 등) 대신 사람이 읽는 라벨을 쓰기 위한 표
+  const tagLabelMap = new Map(tagOptions.map((t) => [t.code, t.label]));
+  const selectedCompanionLabel =
+    companionOptions.find((c) => c.code === companionCode)?.label ?? "함께";
 
   return (
     <>
@@ -414,16 +460,43 @@ export default function PlanPage() {
                 선택한 조건과 가장 잘 맞는 순서예요
               </p>
             </div>
-            {results.map((rec) => (
-              <RegionCard
-                key={rec.regionId}
-                region={toDisplayRegion(rec)}
-                reason={rec.recommendationReason}
-                onClick={() =>
-                  goToItinerary(toDisplayRegion(rec).id, rec.regionId, companionCode ?? "SOLO")
-                }
-              />
-            ))}
+            {results.map((rec) => {
+              const story = buildMatchStory(rec, {
+                nickname: user.nickname,
+                tagLabels: tagLabelMap,
+                companionLabel: selectedCompanionLabel,
+                nights,
+              });
+              return (
+                <div key={rec.regionId} className="space-y-2">
+                  <RegionCard
+                    region={toDisplayRegion(rec)}
+                    reason={rec.recommendationReason}
+                    onClick={() =>
+                      goToItinerary(toDisplayRegion(rec).id, rec.regionId, companionCode ?? "SOLO")
+                    }
+                  />
+                  <div
+                    className="rounded-[18px] px-4 py-3"
+                    style={{ background: "var(--color-accent-soft)" }}
+                  >
+                    <p
+                      className="text-[11.5px] font-extrabold mb-1 flex items-center gap-1.5"
+                      style={{ color: "var(--color-accent-dark)" }}
+                    >
+                      <Icon name="sparkles" size={13} />
+                      {story.headline}
+                    </p>
+                    <p
+                      className="text-[12px] leading-relaxed"
+                      style={{ color: "var(--color-ink-soft)" }}
+                    >
+                      {story.body}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
