@@ -724,6 +724,7 @@ export default function ItineraryPage() {
         <ItineraryMobility
           part="map"
           mode={transportMode}
+          items={day.items}
           route={routes}
           loading={routesLoading}
           error={routesError}
