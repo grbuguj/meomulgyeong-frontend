@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Icon from "./Icon";
+import { LogoMark } from "./Logo";
 
 export default function TopBar({
   title,
@@ -34,11 +35,14 @@ export default function TopBar({
       </div>
 
       {isBrand ? (
-        <span
-          className="font-serif-kr text-[20px] font-bold tracking-tight"
-          style={{ color: "var(--color-ink)" }}
-        >
-          머물;경
+        <span className="flex items-center gap-1.5">
+          <LogoMark size={26} />
+          <span
+            className="font-serif-kr text-[20px] font-bold tracking-tight"
+            style={{ color: "#1E4E8C" }}
+          >
+            머물<span style={{ color: "#FF8F5A" }}>;</span>경
+          </span>
         </span>
       ) : (
         <h1

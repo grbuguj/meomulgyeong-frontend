@@ -1,4 +1,5 @@
 import { startSocialLogin, type SocialProvider } from "../lib/authApi";
+import { LogoMark } from "../components/Logo";
 
 const SOCIAL_BUTTONS: {
   key: SocialProvider;
@@ -48,17 +49,20 @@ export default function LoginPage() {
           >
             경상북도 · 인구감소지역 체류형 여행
           </p>
+          <div className="flex justify-center mb-1">
+            <LogoMark size={96} />
+          </div>
           <h1
             className="font-serif-kr text-[52px] leading-none tracking-tight"
-            style={{ color: "var(--color-ink)" }}
+            style={{ color: "#1E4E8C" }}
           >
-            머물;경
+            머물<span style={{ color: "#FF8F5A" }}>;</span>경
           </h1>
           <p
-            className="text-[12px] mt-1.5 tracking-widest font-medium"
+            className="text-[12px] mt-2 font-semibold"
             style={{ color: "var(--color-ink-muted)" }}
           >
-            慶尙北道
+            여행이 머무는 곳, 경북의 새로운 발견
           </p>
           <p
             className="text-[13.5px] mt-5 leading-relaxed font-medium"
