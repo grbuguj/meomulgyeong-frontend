@@ -80,15 +80,17 @@ export default function CompletedTripsPage() {
                     key={`${trip.itineraryId}-${trip.completedAt}-${index}`}
                     onClick={() => {
                       if (!region) return;
-                      // 다녀온 일정을 그대로 다시 펼쳐 본다. 날짜·박수가 있어야 서버가 같은 일정을 준다.
+                      // 그때 그 일정을 그대로 다시 연다(itineraryId가 있으면 서버가 저장본을 준다).
+                      // 완료 기록이라는 사실과 기여도 수치는 state로 함께 넘겨 리포트로 보여준다.
                       const query = new URLSearchParams({
                         itineraryId: trip.itineraryId,
                         nights: String(trip.nights ?? Math.max(trip.visitedDays - 1, 1)),
                         companion: "SOLO",
                         backendRegionId: String(region.backendId ?? 0),
                       });
-                      if (trip.startDate) query.set("startDate", trip.startDate);
-                      navigate(`/itinerary/${region.id}?${query.toString()}`);
+                      navigate(`/itinerary/${region.id}?${query.toString()}`, {
+                        state: { completedTrip: trip },
+                      });
                     }}
                     className="w-full rounded-[22px] overflow-hidden text-left tap"
                     style={{

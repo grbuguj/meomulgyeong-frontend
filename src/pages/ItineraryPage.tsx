@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import ItineraryMobility from "../components/ItineraryMobility";
 import Icon from "../components/Icon";
 import { REGION_MAP } from "../data/regions";
-import type { DayPlan, Itinerary, PlaceItem } from "../types";
+import type { DayPlan, Itinerary, PlaceItem, TripCompletion } from "../types";
 import { useApp } from "../store/AppContext";
 import {
   bookmarkItinerary,
@@ -232,6 +232,10 @@ export default function ItineraryPage() {
   const { regionId } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  // 완료한 여행 기록에서 열면 그때의 기여도 수치가 함께 넘어온다.
+  // 이 경우 일정은 이미 굳어진 기록이라 저장·완료가 아니라 결과를 보여줘야 한다.
+  const completedTrip = (location.state as { completedTrip?: TripCompletion } | null)?.completedTrip;
   const { saveItinerary, removeSavedItinerary, savedItineraries, completeTrip, user } = useApp();
 
   const region = regionId ? REGION_MAP[regionId] : undefined;
@@ -308,6 +312,8 @@ export default function ItineraryPage() {
         setBackendItineraryId(res.itineraryId);
         setStayDays(frontendItin.days.length);
         setActiveDay(1);
+        // 저장 목록에서 "일정 완료"로 들어온 경우 바로 완료 입력을 띄운다.
+        if (params.get("complete") === "1") setCompleteModal(true);
       })
       .catch((e) => {
         setError(e instanceof ApiError ? e.message : "일정을 불러오지 못했어요. 다시 시도해주세요.");
@@ -499,7 +505,8 @@ export default function ItineraryPage() {
       } else {
         await bookmarkItinerary(backendItineraryId);
         saveItinerary(itin);
-        setSavedNotice(true);
+        // 저장한 일정이 어디로 갔는지 바로 보여준다. 마이페이지에서 방금 저장한 항목을 짚어준다.
+        navigate("/my", { state: { highlightItineraryId: itin.id } });
       }
     } catch (e) {
       const fallback = isSaved
@@ -548,6 +555,7 @@ export default function ItineraryPage() {
         title={`${region.shortName} ${itin.nights}박 ${itin.nights + 1}일`}
         onBack
         right={
+          completedTrip ? undefined : (
           <button
             onClick={handleToggleSave}
             disabled={bookmarkLoading}
@@ -571,6 +579,7 @@ export default function ItineraryPage() {
           >
             <Icon name="bookmark" size={18} filled={isSaved} />
           </button>
+          )
         }
       />
       <div className="flex-1 overflow-y-auto pb-28">
@@ -626,6 +635,47 @@ export default function ItineraryPage() {
             );
           })}
         </div>
+
+        {/* 완료한 여행 기록으로 들어온 경우 — 이 일정이 남긴 결과를 함께 보여준다 */}
+        {completedTrip && (
+          <div
+            className="mx-5 mt-4 rounded-[22px] p-4"
+            style={{
+              background: "linear-gradient(140deg, #3b82f6 0%, var(--color-accent-dark) 100%)",
+              boxShadow: "0 10px 26px -12px rgba(43,108,224,0.55)",
+            }}
+          >
+            <p className="text-[11.5px] font-bold" style={{ color: "rgba(255,255,255,0.8)" }}>
+              다녀온 여행 · {new Date(completedTrip.completedAt).toLocaleDateString("ko-KR")} 완료
+            </p>
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              {[
+                ["머문 날", `${completedTrip.contribution?.populationContributionDays ?? completedTrip.visitedDays}일`],
+                ["함께한 사람", `${completedTrip.visitors}명`],
+                [
+                  "쓴 금액",
+                  `${(((completedTrip.contribution?.estimatedSpending ?? completedTrip.contribution?.reportedSpending) ?? 0) / 10000).toFixed(0)}만원`,
+                ],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.72)" }}>
+                    {label}
+                  </p>
+                  <p className="text-[16px] font-extrabold text-white mt-0.5">{value}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() =>
+                navigate("/trip-result/completed", { state: { trip: completedTrip, itinerary: itin } })
+              }
+              className="mt-3.5 w-full rounded-xl py-2.5 text-[12.5px] font-extrabold tap"
+              style={{ background: "rgba(255,255,255,0.18)", color: "white" }}
+            >
+              이 여행이 남긴 자국 자세히 보기
+            </button>
+          </div>
+        )}
 
         {itin.warnings?.map((warning) => (
           <div
@@ -850,7 +900,11 @@ export default function ItineraryPage() {
       >
         {/* 방금 만든 일정에 "여행 완료"를 띄우면 아직 가지도 않은 여행을 끝내라는 말이 된다.
             저장 전에는 저장을, 저장한 뒤(=다녀올 일정이 된 뒤)에 완료를 권한다. */}
-        {isSaved ? (
+        {completedTrip ? (
+          <Button variant="secondary" fullWidth onClick={() => window.print()}>
+            이 일정 인쇄 · PDF 저장
+          </Button>
+        ) : isSaved ? (
           <Button variant="accent" fullWidth onClick={() => setCompleteModal(true)}>
             다녀왔어요 · 여행 완료
           </Button>

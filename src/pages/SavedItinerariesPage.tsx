@@ -5,6 +5,17 @@ import RegionArt from "../components/RegionArt";
 import { REGION_MAP } from "../data/regions";
 import { useApp } from "../store/AppContext";
 import { ApiError } from "../lib/apiClient";
+import type { Itinerary } from "../types";
+
+/** 저장한 일정을 다시 여는 주소. itineraryId가 있으면 서버가 그때 그 일정을 그대로 준다. */
+function itineraryPath(itin: Itinerary): string {
+  const query = new URLSearchParams({
+    nights: String(itin.nights),
+    companion: itin.companion,
+  });
+  if (itin.backendItineraryId) query.set("itineraryId", String(itin.backendItineraryId));
+  return `/itinerary/${itin.regionId}?${query.toString()}`;
+}
 
 export default function SavedItinerariesPage() {
   const { savedItineraries, removeSavedItinerary } = useApp();
@@ -54,12 +65,28 @@ export default function SavedItinerariesPage() {
                         <p className="text-[13.5px] font-bold" style={{ color: "var(--color-ink)" }}>{region?.name ?? "여행 지역"}</p>
                         <p className="text-[11.5px] font-medium mt-0.5" style={{ color: "var(--color-ink-muted)" }}>{itin.nights}박 {itin.nights + 1}일</p>
                       </div>
-                      <div className="flex gap-3">
-                        <button onClick={() => {
-                          const base = `/itinerary/${itin.regionId}?nights=${itin.nights}&companion=${itin.companion}`;
-                          navigate(itin.backendItineraryId ? `${base}&itineraryId=${itin.backendItineraryId}` : base);
-                        }} className="text-[12px] font-bold tap" style={{ color: "var(--color-accent)" }}>보기</button>
-                        <button onClick={() => handleRemove(itin.id, itin.backendItineraryId)} disabled={removingItineraryId === itin.id} className="text-[12px] font-bold tap" style={{ color: "var(--color-ink-faint)" }}>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => navigate(itineraryPath(itin))}
+                          className="rounded-full px-3 py-2 text-[12px] font-bold tap"
+                          style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink-soft)" }}
+                        >
+                          보기
+                        </button>
+                        {/* 다녀온 뒤 바로 완료할 수 있게 — 일정 화면의 완료 입력을 그대로 띄운다 */}
+                        <button
+                          onClick={() => navigate(`${itineraryPath(itin)}&complete=1`)}
+                          className="rounded-full px-3 py-2 text-[12px] font-bold tap"
+                          style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
+                        >
+                          일정 완료
+                        </button>
+                        <button
+                          onClick={() => handleRemove(itin.id, itin.backendItineraryId)}
+                          disabled={removingItineraryId === itin.id}
+                          className="text-[12px] font-bold tap px-1"
+                          style={{ color: "var(--color-ink-faint)" }}
+                        >
                           {removingItineraryId === itin.id ? "삭제 중…" : "삭제"}
                         </button>
                       </div>

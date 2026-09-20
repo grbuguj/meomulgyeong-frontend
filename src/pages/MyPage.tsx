@@ -1,21 +1,23 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import RegionArt from "../components/RegionArt";
 import { REGIONS, REGION_MAP } from "../data/regions";
 import { useApp } from "../store/AppContext";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import { ApiError } from "../lib/apiClient";
 import { useTheme } from "../store/ThemeContext";
 import Icon from "../components/Icon";
 import Stamp from "../components/Stamp";
+import type { Itinerary, TripCompletion } from "../types";
 
 export default function MyPage() {
   const { user, savedItineraries, removeSavedItinerary, logout, updateNickname } = useApp();
   const { colorTheme, highContrast, setColorTheme, setHighContrast } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [editingNickname, setEditingNickname] = useState(false);
@@ -56,7 +58,43 @@ export default function MyPage() {
   const stampPct = Math.round((user.stamps.length / 15) * 100);
 
   const recentSavedItineraries = savedItineraries.slice(-2).reverse();
-  const recentTrips = user.trips.slice(-2).reverse();
+  const recentTrips = [...user.trips]
+    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+    .slice(0, 2);
+
+  /** 저장한 일정을 다시 여는 주소. itineraryId가 있으면 서버가 그때 그 일정을 그대로 준다. */
+  const itineraryPath = (itin: Itinerary) => {
+    const query = new URLSearchParams({ nights: String(itin.nights), companion: itin.companion });
+    if (itin.backendItineraryId) query.set("itineraryId", String(itin.backendItineraryId));
+    return `/itinerary/${itin.regionId}?${query.toString()}`;
+  };
+
+  /** 완료한 여행은 그때 굳어진 일정과 기여도 수치를 함께 띄운다. */
+  const openCompletedTrip = (trip: TripCompletion) => {
+    const region = REGION_MAP[trip.regionId];
+    if (!region) return;
+    const query = new URLSearchParams({
+      itineraryId: trip.itineraryId,
+      nights: String(trip.nights ?? Math.max(trip.visitedDays - 1, 1)),
+      companion: "SOLO",
+      backendRegionId: String(region.backendId ?? 0),
+    });
+    navigate(`/itinerary/${region.id}?${query.toString()}`, { state: { completedTrip: trip } });
+  };
+
+  // 일정을 막 저장하고 넘어온 경우 그 항목을 잠깐 짚어준다.
+  const highlightItineraryId = (location.state as { highlightItineraryId?: string } | null)
+    ?.highlightItineraryId;
+  const savedSectionRef = useRef<HTMLDivElement>(null);
+  const [spotlightId, setSpotlightId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!highlightItineraryId) return;
+    setSpotlightId(highlightItineraryId);
+    savedSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const timer = setTimeout(() => setSpotlightId(null), 2600);
+    return () => clearTimeout(timer);
+  }, [highlightItineraryId]);
 
   return (
     <>
@@ -158,7 +196,7 @@ export default function MyPage() {
         </div>
 
         {/* 저장한 일정 */}
-        <div className="px-5 mt-7">
+        <div className="px-5 mt-7" ref={savedSectionRef}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-[14px] font-bold" style={{ color: "var(--color-ink)" }}>
               저장한 일정 ({savedItineraries.length})
@@ -203,10 +241,13 @@ export default function MyPage() {
               return (
                 <div
                   key={itin.id}
-                  className="rounded-[20px] overflow-hidden flex items-stretch"
+                  className="rounded-[20px] overflow-hidden flex items-stretch transition-all duration-500"
                   style={{
                     background: "white",
-                    boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.09)",
+                    boxShadow:
+                      spotlightId === itin.id
+                        ? "0 0 0 3px var(--color-accent), 0 10px 28px -10px rgba(43,108,224,0.5)"
+                        : "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.09)",
                   }}
                 >
                   <RegionArt region={region} className="w-20" label={false} />
@@ -225,21 +266,25 @@ export default function MyPage() {
                         {itin.nights}박 {itin.nights + 1}일
                       </p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => {
-                          const base = `/itinerary/${itin.regionId}?nights=${itin.nights}&companion=${itin.companion}`;
-                          navigate(itin.backendItineraryId ? `${base}&itineraryId=${itin.backendItineraryId}` : base);
-                        }}
-                        className="text-[12px] font-bold tap"
-                        style={{ color: "var(--color-accent)" }}
+                        onClick={() => navigate(itineraryPath(itin))}
+                        className="rounded-full px-2.5 py-1.5 text-[11.5px] font-bold tap"
+                        style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink-soft)" }}
                       >
                         보기
                       </button>
                       <button
+                        onClick={() => navigate(`${itineraryPath(itin)}&complete=1`)}
+                        className="rounded-full px-2.5 py-1.5 text-[11.5px] font-bold tap"
+                        style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
+                      >
+                        완료
+                      </button>
+                      <button
                         onClick={() => handleRemoveItinerary(itin.id, itin.backendItineraryId)}
                         disabled={removingItineraryId === itin.id}
-                        className="text-[12px] font-bold tap"
+                        className="text-[11.5px] font-bold tap"
                         style={{ color: "var(--color-ink-faint)" }}
                       >
                         {removingItineraryId === itin.id ? "삭제 중…" : "삭제"}
@@ -271,27 +316,29 @@ export default function MyPage() {
               {recentTrips.map((t, idx) => {
                 const region = REGION_MAP[t.regionId];
                 return (
-                  <div
+                  <button
                     key={idx}
-                    className="rounded-2xl p-3.5 flex justify-between items-center"
+                    onClick={() => openCompletedTrip(t)}
+                    className="w-full rounded-2xl p-3.5 flex justify-between items-center text-left tap"
                     style={{
                       background: "white",
                       boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 6px 14px -6px rgba(28,26,22,0.08)",
                     }}
                   >
-                    <div>
-                      <p
-                        className="text-[13.5px] font-bold"
-                        style={{ color: "var(--color-ink)" }}
-                      >
-                        {region.name}
-                      </p>
-                      <p
-                        className="text-[11.5px] font-medium mt-0.5"
-                        style={{ color: "var(--color-ink-muted)" }}
-                      >
-                        {t.visitedDays}일 체류 · {t.visitors}명
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {region && (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+                          <RegionArt region={region} className="h-full" label={false} />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-[13.5px] font-bold truncate" style={{ color: "var(--color-ink)" }}>
+                          {t.title ?? region?.name ?? "여행 지역"}
+                        </p>
+                        <p className="text-[11.5px] font-medium mt-0.5" style={{ color: "var(--color-ink-muted)" }}>
+                          머문 날 {t.contribution?.populationContributionDays ?? t.visitedDays}일 · {t.visitors}명
+                        </p>
+                      </div>
                     </div>
                     <span
                       className="text-[11px] font-semibold"
@@ -299,7 +346,7 @@ export default function MyPage() {
                     >
                       {new Date(t.completedAt).toLocaleDateString("ko-KR")}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
