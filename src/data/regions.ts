@@ -167,7 +167,10 @@ export const REGIONS: Region[] = [
     travelStyle: "자연 35% · 힐링 30% · 로컬푸드 20% · 문화 15%",
     localTip: "보현산 일대는 해가 진 뒤 기온이 크게 내려갈 수 있어 겉옷을 챙기는 게 좋아요.",
     heroPalette: ["#342748", "#9c5965"],
-    heroImage: undefined,
+    // 영천 조양각(금호강 변 누각, 경북 유형문화재 제144호)
+    // ⓒ Korea Heritage Service, CC BY-SA 4.0 — Wikimedia Commons
+    heroImage:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/%EC%98%81%EC%B2%9C_%EC%A1%B0%EC%96%91%EA%B0%81%28No2%29.jpg/1280px-%EC%98%81%EC%B2%9C_%EC%A1%B0%EC%96%91%EA%B0%81%28No2%29.jpg",
     isVerifiedHub: false,
     representativeSpots: ["보현산천문과학관", "시안미술관", "영천와인", "별빛마을"],
   },
