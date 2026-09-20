@@ -124,6 +124,97 @@ function NumberField({
 }
 
 /**
+ * 금액 입력 필드.
+ * 금액은 자릿수가 커서 숫자만 늘어놓으면 얼마를 적었는지 읽기 어렵다.
+ * 천 단위로 끊어 보여주고, 자주 쓰는 단위를 눌러 더할 수 있게 한다.
+ */
+function AmountField({
+  label,
+  value,
+  onChange,
+  suggestion,
+}: {
+  label: string;
+  value: number;
+  onChange: (next: number) => void;
+  /** 기억이 안 나는 경우를 위한 제안액. 누르면 그 값으로 덮어쓴다. */
+  suggestion?: number;
+}) {
+  const QUICK_ADDS = [10000, 50000, 100000];
+  const MAX = 100_000_000;
+
+  return (
+    <div>
+      <label className="text-[12px] font-bold block mb-1.5" style={{ color: "var(--color-ink-soft)" }}>
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="numeric"
+          value={value === 0 ? "" : value.toLocaleString("ko-KR")}
+          placeholder="0"
+          onChange={(e) => {
+            const digits = e.target.value.replace(/[^\d]/g, "");
+            onChange(digits === "" ? 0 : Math.min(Number(digits), MAX));
+          }}
+          className="w-full rounded-2xl pl-4 pr-10 py-3 outline-none font-bold text-[17px] text-right"
+          style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink)" }}
+        />
+        <span
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-[12.5px] font-semibold pointer-events-none"
+          style={{ color: "var(--color-ink-faint)" }}
+        >
+          원
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mt-2">
+        {QUICK_ADDS.map((amount) => (
+          <button
+            key={amount}
+            onClick={() => onChange(Math.min(value + amount, MAX))}
+            className="rounded-full px-3 py-1.5 text-[11.5px] font-bold tap"
+            style={{ background: "white", color: "var(--color-ink)", border: "1.5px solid var(--color-line)" }}
+          >
+            +{(amount / 10000).toLocaleString("ko-KR")}만
+          </button>
+        ))}
+        {value > 0 && (
+          <button
+            onClick={() => onChange(0)}
+            className="rounded-full px-3 py-1.5 text-[11.5px] font-bold tap"
+            style={{ background: "transparent", color: "var(--color-ink-faint)" }}
+          >
+            지우기
+          </button>
+        )}
+      </div>
+
+      {value > 0 ? (
+        <p className="text-[10.5px] mt-2" style={{ color: "var(--color-ink-faint)" }}>
+          {(value / 10000).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}만원 · 지역 소비로 집계돼요
+        </p>
+      ) : (
+        <p className="text-[10.5px] mt-2" style={{ color: "var(--color-ink-faint)" }}>
+          숙박·식사·체험에 쓴 금액이에요.
+        </p>
+      )}
+
+      {suggestion !== undefined && suggestion > 0 && value !== suggestion && (
+        <button
+          onClick={() => onChange(suggestion)}
+          className="mt-2 rounded-full px-3.5 py-2 text-[11.5px] font-bold tap"
+          style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
+        >
+          기억이 안 나면 예상 {Math.round(suggestion / 10000).toLocaleString("ko-KR")}만원으로
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
  * 출처·한계 고지.
  * 관광 정보와 예보는 원본이 바뀌거나 현장과 다를 수 있어, 화면과 인쇄본 양쪽에 함께 표기한다.
  */
@@ -807,30 +898,12 @@ export default function ItineraryPage() {
             onChange={setStayDays}
           />
           <NumberField label="방문 인원" unit="명" min={1} value={visitors} onChange={setVisitors} />
-          <div>
-            <NumberField
-              label="쓴 금액"
-              unit="원"
-              min={0}
-              step={10000}
-              value={totalSpent}
-              onChange={setTotalSpent}
-              hint={
-                totalSpent > 0
-                  ? `${totalSpent.toLocaleString("ko-KR")}원 · 지역 소비로 집계돼요`
-                  : "숙박·식사·체험에 쓴 금액이에요. 기억이 안 나면 아래 예상액을 눌러주세요."
-              }
-            />
-            {suggestedSpend > 0 && totalSpent !== suggestedSpend && (
-              <button
-                onClick={() => setTotalSpent(suggestedSpend)}
-                className="mt-2 rounded-full px-3.5 py-2 text-[11.5px] font-bold tap"
-                style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
-              >
-                예상 {Math.round(suggestedSpend / 10000)}만원으로 채우기
-              </button>
-            )}
-          </div>
+          <AmountField
+            label="쓴 금액"
+            value={totalSpent}
+            onChange={setTotalSpent}
+            suggestion={suggestedSpend}
+          />
           {actionError && (
             <p className="text-[12px] font-semibold" style={{ color: "#c2410c" }}>
               {actionError}
