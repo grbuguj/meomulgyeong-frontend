@@ -100,7 +100,12 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
 
   return (
     <>
-      <TopBar title="이번 여행이 남긴 자국" onBack />
+      <TopBar
+        title="이번 여행이 남긴 자국"
+        // 히스토리로 돌아가면 방금 완료한 일정 화면으로 되돌아가 완료 입력이 다시 뜬다.
+        // 이미 끝난 여행이므로 기록이 쌓인 마이페이지로 보낸다.
+        onBack={() => navigate("/my", { state: { scrollTo: "completed" }, replace: true })}
+      />
       <div className="flex-1 overflow-y-auto px-5 py-5 pb-10">
         {/* 도장이 찍히는 순간 — 여행을 마쳤다는 걸 숫자보다 먼저 보여준다.
             어디를 다녀왔는지 글자보다 사진이 빠르게 읽히므로 뒤에 지역 사진을 깐다. */}

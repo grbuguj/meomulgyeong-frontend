@@ -39,6 +39,9 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
   const drawnRef = useRef<{ setMap(map: kakao.maps.Map | null): void }[]>([]);
   const [status, setStatus] = useState<"idle" | "ready" | "failed">("idle");
   const [interactive, setInteractive] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  // 화면에 맞춰 다시 그릴 때 쓰려고 마지막 bounds를 들고 있는다.
+  const boundsRef = useRef<kakao.maps.LatLngBounds | null>(null);
 
   const stops = useMemo<Stop[]>(
     () =>
@@ -132,7 +135,10 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
           drawnRef.current.push(overlay);
         });
 
-        if (!bounds.isEmpty()) map.setBounds(bounds, 28, 24, 28, 24);
+        if (!bounds.isEmpty()) {
+          boundsRef.current = bounds;
+          map.setBounds(bounds, 28, 24, 28, 24);
+        }
         setStatus("ready");
       })
       .catch(() => {
@@ -143,6 +149,17 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
       cancelled = true;
     };
   }, [stops, lines, hasAnything, canUseMap]);
+
+  // 컨테이너 크기가 바뀌면 지도가 잘린 채로 남는다. 다시 재보고 화면을 맞춘다.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || status !== "ready") return;
+    const timer = setTimeout(() => {
+      map.relayout();
+      if (boundsRef.current) map.setBounds(boundsRef.current, 28, 24, 28, 24);
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [expanded, status]);
 
   useEffect(
     () => () => {
@@ -166,9 +183,45 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
     setInteractive(next);
   };
 
+  /** 카카오맵은 숫자가 작을수록 확대된다. 1~14 범위를 벗어나지 않게 막는다. */
+  const zoom = (delta: number) => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setLevel(Math.min(14, Math.max(1, map.getLevel() + delta)));
+  };
+
+  const toggleExpanded = () => {
+    const next = !expanded;
+    setExpanded(next);
+    // 크게 펼친 상태에서는 손으로 움직일 수 있어야 의미가 있다.
+    const map = mapRef.current;
+    if (map) {
+      map.setDraggable(next || interactive);
+      map.setZoomable(next || interactive);
+    }
+  };
+
+  const controlStyle = {
+    background: "rgba(255,255,255,0.94)",
+    color: "var(--color-ink)",
+    boxShadow: "0 1px 4px rgba(28,26,22,0.18)",
+  };
+
   return (
-    <div className="mt-3 relative rounded-2xl overflow-hidden" style={{ background: "var(--color-forest-light)" }}>
-      <div ref={containerRef} className="w-full h-[180px]" role="img" aria-label="오늘 일정 장소와 이동 경로 지도" />
+    <div
+      className={
+        expanded
+          ? "fixed inset-0 z-50 bg-white"
+          : "mt-3 relative rounded-2xl overflow-hidden"
+      }
+      style={expanded ? undefined : { background: "var(--color-forest-light)" }}
+    >
+      <div
+        ref={containerRef}
+        className={expanded ? "w-full h-full" : "w-full h-[180px]"}
+        role="img"
+        aria-label="오늘 일정 장소와 이동 경로 지도"
+      />
 
       {status !== "ready" && (
         <div className="absolute inset-0 flex items-center justify-center text-[10.5px] font-semibold" style={{ color: "var(--color-forest)" }}>
@@ -176,15 +229,57 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
         </div>
       )}
 
-      {/* 카드 헤더가 이미 "오늘의 동선"이라 지도 위에는 조작 버튼만 얹는다 */}
       {status === "ready" && (
-        <button
-          onClick={toggleInteractive}
-          className="absolute top-2 right-2 rounded-lg px-2.5 py-1.5 text-[11px] font-extrabold tap"
-          style={{ background: "rgba(255,255,255,0.92)", color: "var(--color-accent)", boxShadow: "0 1px 4px rgba(28,26,22,0.14)" }}
-        >
-          {interactive ? "지도 고정" : "지도 움직이기"}
-        </button>
+        <>
+          {/* 카드 헤더가 이미 "오늘의 동선"이라 지도 위에는 조작 버튼만 얹는다 */}
+          {!expanded && (
+            <button
+              onClick={toggleInteractive}
+              className="absolute top-2 right-2 rounded-lg px-2.5 py-1.5 text-[11px] font-extrabold tap"
+              style={{ ...controlStyle, color: "var(--color-accent)" }}
+            >
+              {interactive ? "지도 고정" : "지도 움직이기"}
+            </button>
+          )}
+
+          {expanded && (
+            <button
+              onClick={toggleExpanded}
+              className="absolute top-3 left-3 rounded-full px-3.5 py-2 text-[12px] font-extrabold tap"
+              style={controlStyle}
+            >
+              ✕ 닫기
+            </button>
+          )}
+
+          {/* 확대·축소·전체보기 — 엄지가 닿는 오른쪽 아래에 모아둔다 */}
+          <div className={`absolute right-2 flex flex-col gap-1 ${expanded ? "bottom-6" : "bottom-2"}`}>
+            <button
+              onClick={toggleExpanded}
+              aria-label={expanded ? "지도 작게 보기" : "지도 전체화면으로 보기"}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-extrabold tap"
+              style={controlStyle}
+            >
+              {expanded ? "⤡" : "⤢"}
+            </button>
+            <button
+              onClick={() => zoom(-1)}
+              aria-label="지도 확대"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[16px] font-extrabold tap"
+              style={controlStyle}
+            >
+              +
+            </button>
+            <button
+              onClick={() => zoom(1)}
+              aria-label="지도 축소"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[16px] font-extrabold tap"
+              style={controlStyle}
+            >
+              −
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

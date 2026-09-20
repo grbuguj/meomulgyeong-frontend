@@ -8,7 +8,8 @@ export default function TopBar({
   right,
 }: {
   title: string;
-  onBack?: boolean;
+  /** true면 히스토리 뒤로가기. 돌아갈 곳이 정해져 있으면 함수를 넘긴다. */
+  onBack?: boolean | (() => void);
   right?: React.ReactNode;
 }) {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function TopBar({
       <div className="relative z-10 min-w-9 shrink-0">
         {onBack && (
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => (typeof onBack === "function" ? onBack() : navigate(-1))}
             className="w-9 h-9 rounded-full bg-white card-soft flex items-center justify-center tap"
             aria-label="뒤로가기"
             style={{ color: "var(--color-ink)" }}

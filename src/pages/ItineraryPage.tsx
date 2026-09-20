@@ -232,7 +232,7 @@ function SourceNote({ className = "", style }: { className?: string; style?: CSS
 
 export default function ItineraryPage() {
   const { regionId } = useParams();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   // 완료한 여행 기록에서 열면 그때의 기여도 수치가 함께 넘어온다.
@@ -318,7 +318,13 @@ export default function ItineraryPage() {
         setStayDays(frontendItin.days.length);
         setActiveDay(1);
         // 저장 목록에서 "일정 완료"로 들어온 경우 바로 완료 입력을 띄운다.
-        if (params.get("complete") === "1") setCompleteModal(true);
+        // 주소에서는 지워둔다. 남겨두면 뒤로 돌아왔을 때 완료 입력이 다시 열린다.
+        if (params.get("complete") === "1") {
+          setCompleteModal(true);
+          const rest = new URLSearchParams(params);
+          rest.delete("complete");
+          setParams(rest, { replace: true });
+        }
       })
       .catch((e) => {
         setError(e instanceof ApiError ? e.message : "일정을 불러오지 못했어요. 다시 시도해주세요.");

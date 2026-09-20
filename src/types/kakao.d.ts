@@ -38,6 +38,9 @@ declare global {
       setDraggable(draggable: boolean): void;
       setZoomable(zoomable: boolean): void;
       relayout(): void;
+      /** 숫자가 작을수록 확대된다. 카카오맵은 1~14를 쓴다. */
+      getLevel(): number;
+      setLevel(level: number): void;
     }
 
     interface PolylineOptions {
