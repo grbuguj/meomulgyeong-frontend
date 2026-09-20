@@ -127,7 +127,9 @@ export default function HomePage() {
               <p className="text-[15px] font-bold text-white mt-1.5">머문 날</p>
               <p className="text-[46px] font-extrabold text-white leading-none mt-0.5">
                 {totals.populationDays.toLocaleString("ko-KR")}
-                <span className="text-[20px] ml-1.5">일</span>
+                <span className="text-[20px] ml-1.5" style={{ color: "#FFB88A" }}>
+                  일
+                </span>
               </p>
               <div
                 className="grid grid-cols-3 gap-2 mt-4 pt-3.5"
@@ -158,35 +160,51 @@ export default function HomePage() {
 
           {/* 다 같이 쌓은 기록 — 내 기록만 보면 혼자 하는 일 같지만, 합계를 보면 규모가 읽힌다 */}
           {stats && stats.totalTrips > 0 && (
-            <div className="mt-4 rounded-[16px] p-3.5" style={{ background: "rgba(255,255,255,0.15)" }}>
-              <div className="flex items-baseline justify-between">
-                <p className="text-[12px] font-bold text-white">다 같이 머문 날</p>
-                <p className="text-[17px] font-extrabold text-white">
+            // 파란 카드 안에 파란 박스를 겹치면 한 덩어리로 뭉개져 보인다.
+            // 밝은 바탕으로 빼서 "내 기록"과 "모두의 기록"이 구분되게 한다.
+            <div className="mt-4 rounded-[18px] p-3.5" style={{ background: "var(--color-ivory)" }}>
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-[12px] font-bold" style={{ color: "var(--color-ink-soft)" }}>
+                  머물;경 사용자들이 머문 날
+                </p>
+                <p className="text-[18px] font-extrabold shrink-0" style={{ color: "#1E4E8C" }}>
                   {stats.totalPopulationContributionDays.toLocaleString("ko-KR")}일
                 </p>
               </div>
-              <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.72)" }}>
+              <p className="text-[10px] mt-0.5" style={{ color: "var(--color-ink-faint)" }}>
                 {`${stats.totalTravelers.toLocaleString("ko-KR")}명이 ${stats.totalTrips.toLocaleString("ko-KR")}번 다녀가 ${Math.round(stats.totalSpending / 10000).toLocaleString("ko-KR")}만원을 썼어요`}
               </p>
 
               {stats.topRegions.length > 0 && (
-                <div className="flex gap-1.5 mt-3">
+                <div className="flex gap-1.5 mt-2.5">
                   {stats.topRegions.slice(0, 3).map((entry) => {
                     const local = REGIONS.find((r) => r.backendId === entry.regionId);
+                    const isTop = entry.rank === 1;
                     return (
                       <button
                         key={entry.regionId}
                         onClick={() => local && navigate(`/region/${local.id}`)}
                         className="flex-1 min-w-0 rounded-xl px-2 py-1.5 text-left tap"
-                        style={{ background: "rgba(255,255,255,0.16)" }}
+                        style={{
+                          background: "white",
+                          boxShadow: isTop
+                            ? "0 0 0 1.5px #FF8F5A"
+                            : "0 1px 2px rgba(28,26,22,0.05)",
+                        }}
                       >
-                        <p className="text-[9.5px] font-bold" style={{ color: "rgba(255,255,255,0.7)" }}>
+                        <p
+                          className="text-[9.5px] font-extrabold"
+                          style={{ color: isTop ? "#FF8F5A" : "var(--color-ink-faint)" }}
+                        >
                           {entry.rank}위
                         </p>
-                        <p className="text-[12px] font-extrabold text-white truncate mt-0.5">
+                        <p
+                          className="text-[12px] font-extrabold truncate mt-0.5"
+                          style={{ color: "var(--color-ink)" }}
+                        >
                           {entry.regionName}
                         </p>
-                        <p className="text-[9.5px] font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>
+                        <p className="text-[9.5px] font-semibold" style={{ color: "var(--color-ink-muted)" }}>
                           {entry.populationContributionDays.toLocaleString("ko-KR")}일
                         </p>
                       </button>
