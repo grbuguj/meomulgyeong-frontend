@@ -6,6 +6,7 @@ import Button from "../components/Button";
 import { REGION_MAP } from "../data/regions";
 import { TAG_MAP } from "../data/tags";
 import { getRegionGallery, toPreferenceTags, type RegionGalleryResponse } from "../lib/recommendationApi";
+import { toSecureUrl } from "../lib/imageUrl";
 import { useApp } from "../store/AppContext";
 
 export default function RegionDetailPage() {
@@ -26,7 +27,9 @@ export default function RegionDetailPage() {
     let cancelled = false;
     getRegionGallery(backendId)
       .then((res) => {
-        if (!cancelled) setPhotos(res.photos);
+        if (!cancelled) {
+          setPhotos(res.photos.map((photo) => ({ ...photo, imageUrl: toSecureUrl(photo.imageUrl) ?? photo.imageUrl })));
+        }
       })
       .catch(() => {/* 사진을 못 불러와도 지역 설명은 읽을 수 있어야 한다 */});
     return () => { cancelled = true; };

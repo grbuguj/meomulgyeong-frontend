@@ -1,6 +1,7 @@
 import { apiFetch } from "./apiClient";
 import type { CompanionType, DayPlan, Itinerary, PlaceItem, TripCompletion } from "../types";
 import { REGIONS } from "../data/regions";
+import { toSecureUrl } from "./imageUrl";
 
 // ────────────────────────────────────────────────────────────
 // 백엔드 ERD 기반 타입 — 실제 스펙이 나오면 TODO 부분을 수정한다.
@@ -239,7 +240,7 @@ function toFrontendItem(item: ItineraryItemResponse, regionId: string): PlaceIte
     category: ITEM_CATEGORY_MAP[item.type] ?? "stay",
     time: sequenceToTime(item.sequence),
     description: item.reason ?? "",
-    imageUrl: item.imageUrl,
+    imageUrl: toSecureUrl(item.imageUrl),
     address: item.address,
     latitude: item.latitude,
     longitude: item.longitude,

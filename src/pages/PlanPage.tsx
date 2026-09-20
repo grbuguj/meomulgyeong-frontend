@@ -9,6 +9,7 @@ import StepDots from "../components/StepDots";
 import DateRangeCalendar from "../components/DateRangeCalendar";
 import Icon from "../components/Icon";
 import { josa, ro } from "../lib/korean";
+import { toSecureUrl } from "../lib/imageUrl";
 import { REGIONS, REGION_MAP } from "../data/regions";
 import type { Region } from "../types";
 import { useApp } from "../store/AppContext";
@@ -76,7 +77,7 @@ function toDisplayRegion(rec: RegionRecommendation): Region {
     travelStyle: "",
     localTip: "",
     heroPalette: ["#4a6b52", "#93a86b"],
-    heroImage: rec.thumbnailUrl ?? undefined,
+    heroImage: toSecureUrl(rec.thumbnailUrl) ?? undefined,
     isVerifiedHub: false,
     representativeSpots: rec.representativePlaces,
   };
