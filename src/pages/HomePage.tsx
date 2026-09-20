@@ -4,6 +4,7 @@ import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import Icon, { type IconName } from "../components/Icon";
 import RegionArt from "../components/RegionArt";
+import Button from "../components/Button";
 import { REGIONS } from "../data/regions";
 import { useApp } from "../store/AppContext";
 import { getStatsSummary, type StatsSummaryResponse } from "../lib/recommendationApi";
@@ -97,18 +98,155 @@ export default function HomePage() {
   const carousel = (unvisited.length > 0 ? unvisited : REGIONS).slice(0, 8);
   const hasTrips = user.trips.length > 0;
 
+  // 처음 온 사람에게는 0으로 찬 대시보드 대신 "무엇을 하는 서비스이고 지금 뭘 하면 되는지"를 보여준다.
+  // 기록이 쌓이기 전까지는 그게 이 화면이 할 수 있는 유일한 일이다.
+  if (!hasTrips) {
+    return (
+      <>
+        <TopBar title="머물;경" />
+        <div className="flex-1 overflow-y-auto pt-2 pb-4">
+          <div className="px-5 mt-4">
+            <p
+              className="text-[11px] font-extrabold tracking-[0.1em]"
+              style={{ color: "var(--color-accent)" }}
+            >
+              경상북도 인구감소지역 15곳
+            </p>
+            <h2
+              className="text-[30px] font-extrabold mt-2 leading-tight tracking-tight"
+              style={{ color: "var(--color-ink)" }}
+            >
+              머무는 여행을
+              <br />
+              짜드려요
+            </h2>
+            <p className="text-[13.5px] leading-relaxed mt-2.5" style={{ color: "var(--color-ink-soft)" }}>
+              취향·날짜·동행만 고르면 동선까지 맞춰 일정이 나와요.
+              <br />
+              하루 3시간만 머물러도 그 지역의 생활인구로 집계됩니다.
+            </p>
+
+            <Button variant="accent" fullWidth className="mt-5" onClick={() => navigate("/plan")}>
+              첫 일정 만들기 →
+            </Button>
+          </div>
+
+          {/* 내 기록이 0일 때는 남들이 쌓은 실적이 훨씬 설득력 있다 */}
+          {stats && stats.totalTrips > 0 && (
+            <div
+              className="mx-5 mt-4 rounded-[22px] p-4"
+              style={{
+                background: "linear-gradient(140deg, #3b82f6 0%, var(--color-accent-dark) 100%)",
+                boxShadow: "0 10px 26px -12px rgba(43,108,224,0.5)",
+              }}
+            >
+              <p className="text-[12.5px] font-bold text-white leading-relaxed">
+                {`이미 ${stats.totalTravelers.toLocaleString("ko-KR")}명이 ${stats.totalTrips.toLocaleString("ko-KR")}번 다녀가`}
+                <br />
+                {`경북에 `}
+                <span className="text-[19px] font-extrabold">
+                  {stats.totalPopulationContributionDays.toLocaleString("ko-KR")}일
+                </span>
+                {`을 머물렀어요`}
+              </p>
+              {stats.topRegions.length > 0 && (
+                <div className="flex gap-1.5 mt-3">
+                  {stats.topRegions.slice(0, 3).map((entry) => {
+                    const local = REGIONS.find((r) => r.backendId === entry.regionId);
+                    const isTop = entry.rank === 1;
+                    return (
+                      <button
+                        key={entry.regionId}
+                        onClick={() => local && navigate(`/region/${local.id}`)}
+                        className="flex-1 min-w-0 rounded-xl px-2 py-1.5 text-left tap"
+                        style={{
+                          background: "white",
+                          boxShadow: isTop ? "0 0 0 1.5px #FF8F5A" : undefined,
+                        }}
+                      >
+                        <p
+                          className="text-[9.5px] font-extrabold"
+                          style={{ color: isTop ? "#FF8F5A" : "var(--color-ink-faint)" }}
+                        >
+                          {entry.rank}위
+                        </p>
+                        <p className="text-[12px] font-extrabold truncate mt-0.5" style={{ color: "var(--color-ink)" }}>
+                          {entry.regionName}
+                        </p>
+                        <p className="text-[9.5px] font-semibold" style={{ color: "var(--color-ink-muted)" }}>
+                          {entry.populationContributionDays.toLocaleString("ko-KR")}일
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          <p className="px-5 mt-7 mb-3 text-[14px] font-extrabold" style={{ color: "var(--color-ink)" }}>
+            어디로 갈 수 있나요
+          </p>
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-thin px-5 pb-2">
+            {REGIONS.slice(0, 8).map((region) => (
+              <button
+                key={region.id}
+                onClick={() => navigate(`/region/${region.id}`)}
+                className="shrink-0 w-[132px] rounded-[18px] overflow-hidden text-left tap"
+                style={{
+                  background: "white",
+                  boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.1)",
+                }}
+              >
+                <RegionArt region={region} className="h-[88px]" label={false} />
+                <div className="p-2.5">
+                  <p className="text-[12.5px] font-extrabold" style={{ color: "var(--color-ink)" }}>
+                    {region.name}
+                  </p>
+                  <p
+                    className="text-[10.5px] mt-0.5 leading-snug line-clamp-2"
+                    style={{ color: "var(--color-ink-muted)" }}
+                  >
+                    {region.summary}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <BottomNav />
+      </>
+    );
+  }
+
   return (
     <>
       <TopBar title="머물;경" />
       <div className="flex-1 overflow-y-auto pt-2 pb-4">
-        <h2
-          className="px-5 text-[24px] font-extrabold mt-3 mb-4 leading-tight tracking-tight"
-          style={{ color: "var(--color-ink)" }}
-        >
-          {user.nickname}님, 다시
-          <br />
-          어디로 떠나볼까요?
-        </h2>
+        <div className="px-5 mt-3 mb-4">
+          <h2
+            className="text-[24px] font-extrabold leading-tight tracking-tight"
+            style={{ color: "var(--color-ink)" }}
+          >
+            {user.nickname}님, 다시
+            <br />
+            어디로 떠나볼까요?
+          </h2>
+          <p className="text-[12px] font-semibold mt-1.5" style={{ color: "var(--color-ink-faint)" }}>
+            경상북도 인구감소지역 15곳 · 머무는 여행
+          </p>
+        </div>
+
+        {/* 주 액션은 첫 화면 안에 둔다. 아래에 묻어두면 스크롤하지 않는 사람은 만나지 못한다. */}
+        <div className="px-5 mb-3">
+          <HubCard
+            icon="sparkles"
+            title="새 일정 만들기"
+            subtitle="취향·날짜·동행만 고르면 돼요"
+            primary
+            onClick={() => navigate("/plan")}
+          />
+        </div>
 
         {/* 누적 기여 — 내 기록과 다 같이 쌓은 기록을 한 장에 담는다.
             따로 두면 첫 화면에 카드가 너무 많아진다. */}
@@ -287,13 +425,6 @@ export default function HomePage() {
         </div>
 
         <div className="px-5 mt-7 space-y-2.5">
-          <HubCard
-            icon="sparkles"
-            title="새 일정 추가하기"
-            subtitle="취향 선택부터 시작해요"
-            primary
-            onClick={() => navigate("/plan")}
-          />
           <HubCard
             icon="bookmark"
             title="저장한 일정 보기"
