@@ -83,7 +83,10 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401) {
+  // 토큰을 실어 보낸 요청이 401일 때만 만료로 본다.
+  // 공개 엔드포인트가 401을 주는 것은(예: 서버에 아직 permitAll이 반영되지 않은 경우)
+  // 내 세션과 무관한데, 여기서 토큰을 지우면 멀쩡한 로그인이 통째로 풀린다.
+  if (res.status === 401 && auth) {
     clearAccessToken();
   }
 
