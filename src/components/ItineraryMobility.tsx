@@ -12,6 +12,15 @@ function formatMoney(value: number | null) {
   return value === null ? null : value === 0 ? "무료" : `${value.toLocaleString()}원`;
 }
 
+const SKETCH_WIDTH = 280;
+const SKETCH_HEIGHT = 150;
+const SKETCH_PADDING = 16;
+
+/**
+ * 경로 좌표를 그대로 그린 동선 스케치.
+ * 가로·세로를 각각 늘려 상자를 꽉 채우면 실제 이동 모양이 뭉개지므로,
+ * 양축에 같은 배율을 적용하고 남는 공간은 가운데로 몬다.
+ */
 function RouteSketch({ segments }: { segments: RouteSegment[] }) {
   const points = segments.flatMap((segment) => segment.path ?? []);
   if (points.length < 2) return null;
@@ -19,13 +28,30 @@ function RouteSketch({ segments }: { segments: RouteSegment[] }) {
   const latitudes = points.map(([lat]) => lat);
   const longitudes = points.map(([, lng]) => lng);
   const minLat = Math.min(...latitudes);
-  const maxLat = Math.max(...latitudes);
   const minLng = Math.min(...longitudes);
-  const maxLng = Math.max(...longitudes);
-  const spanLat = maxLat - minLat || 0.01;
-  const spanLng = maxLng - minLng || 0.01;
+  const spanLat = Math.max(...latitudes) - minLat || 0.0001;
+  const spanLng = Math.max(...longitudes) - minLng || 0.0001;
+
+  // 경도 1도는 위도 1도보다 짧다(위도가 높을수록 더 짧다). 가로를 그만큼 줄여야 실제 모양이 된다.
+  const midLat = (minLat + Math.max(...latitudes)) / 2;
+  const lngScale = Math.cos((midLat * Math.PI) / 180);
+  const spanX = spanLng * lngScale;
+
+  const innerWidth = SKETCH_WIDTH - SKETCH_PADDING * 2;
+  const innerHeight = SKETCH_HEIGHT - SKETCH_PADDING * 2;
+  const scale = Math.min(innerWidth / spanX, innerHeight / spanLat);
+  const drawnWidth = spanX * scale;
+  const drawnHeight = spanLat * scale;
+  const offsetX = (SKETCH_WIDTH - drawnWidth) / 2;
+  const offsetY = (SKETCH_HEIGHT - drawnHeight) / 2;
+
   const svgPoints = points
-    .map(([lat, lng]) => `${18 + ((lng - minLng) / spanLng) * 244},${74 - ((lat - minLat) / spanLat) * 54}`)
+    .map(([lat, lng]) => {
+      const x = offsetX + (lng - minLng) * lngScale * scale;
+      // 위도는 위로 갈수록 커지므로 화면 좌표에서는 뒤집는다
+      const y = offsetY + drawnHeight - (lat - minLat) * scale;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
     .join(" ");
 
   return (
@@ -33,8 +59,13 @@ function RouteSketch({ segments }: { segments: RouteSegment[] }) {
       <div className="px-3 pt-2 text-[10px] font-bold" style={{ color: "var(--color-forest)" }}>
         오늘의 동선 흐름
       </div>
-      <svg viewBox="0 0 280 92" className="w-full h-[88px]" role="img" aria-label="일정 장소 간 이동 동선">
-        <path d="M0 16 C55 5 76 37 128 24 S218 5 280 28" stroke="rgba(56,80,62,0.12)" strokeWidth="18" fill="none" />
+      <svg
+        viewBox={`0 0 ${SKETCH_WIDTH} ${SKETCH_HEIGHT}`}
+        className="w-full"
+        style={{ aspectRatio: `${SKETCH_WIDTH} / ${SKETCH_HEIGHT}` }}
+        role="img"
+        aria-label="일정 장소 간 이동 동선"
+      >
         <polyline points={svgPoints} stroke="#2b6ce0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         {([0, points.length - 1] as const).map((index) => {
           const [cx, cy] = svgPoints.split(" ")[index].split(",");

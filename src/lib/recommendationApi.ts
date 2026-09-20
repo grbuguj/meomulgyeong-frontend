@@ -88,3 +88,21 @@ export function recommendRegions(
     body: request,
   });
 }
+
+export interface RegionGalleryResponse {
+  regionId: number;
+  regionName: string;
+  photos: Array<{
+    contentId: number;
+    title: string;
+    imageUrl: string;
+    address: string | null;
+  }>;
+  source: string;
+  fetchedAt: string;
+}
+
+/** 지역 대표 사진 목록 — 공개 API(로그인 불필요) */
+export function getRegionGallery(regionId: number): Promise<RegionGalleryResponse> {
+  return apiFetch<RegionGalleryResponse>(`/api/regions/${regionId}/gallery`, { auth: false });
+}

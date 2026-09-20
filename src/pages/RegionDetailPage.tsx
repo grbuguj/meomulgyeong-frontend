@@ -1,10 +1,11 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import RegionArt from "../components/RegionArt";
 import Button from "../components/Button";
 import { REGION_MAP } from "../data/regions";
 import { TAG_MAP } from "../data/tags";
-import { toPreferenceTags } from "../lib/recommendationApi";
+import { getRegionGallery, toPreferenceTags, type RegionGalleryResponse } from "../lib/recommendationApi";
 import { useApp } from "../store/AppContext";
 
 export default function RegionDetailPage() {
@@ -12,6 +13,24 @@ export default function RegionDetailPage() {
   const navigate = useNavigate();
   const { user } = useApp();
   const region = regionId ? REGION_MAP[regionId] : undefined;
+
+  // 대표 사진은 한국관광공사에서 받아온다. 실패해도 화면은 그대로 보여준다.
+  const [photos, setPhotos] = useState<RegionGalleryResponse["photos"]>([]);
+  // 링크가 죽은 사진은 빼버린다. 한 장도 안 남으면 섹션 자체를 감춘다.
+  const [brokenIds, setBrokenIds] = useState<number[]>([]);
+  const backendId = region?.backendId;
+  const visiblePhotos = photos.filter((photo) => !brokenIds.includes(photo.contentId));
+
+  useEffect(() => {
+    if (!backendId) return;
+    let cancelled = false;
+    getRegionGallery(backendId)
+      .then((res) => {
+        if (!cancelled) setPhotos(res.photos);
+      })
+      .catch(() => {/* 사진을 못 불러와도 지역 설명은 읽을 수 있어야 한다 */});
+    return () => { cancelled = true; };
+  }, [backendId]);
 
   if (!region) return <div className="p-6" style={{ color: "var(--color-ink-soft)" }}>지역을 찾을 수 없어요.</div>;
 
@@ -107,6 +126,47 @@ export default function RegionDetailPage() {
               ))}
             </div>
           </div>
+
+          {/* 지역 사진 — 글로만 된 소개보다 사진 몇 장이 지역을 더 잘 설명한다 */}
+          {visiblePhotos.length > 0 && (
+            <div>
+              <p className="text-[13.5px] font-bold mb-3" style={{ color: "var(--color-ink)" }}>
+                {region.shortName}의 장면들
+              </p>
+              <div className="flex gap-2.5 overflow-x-auto scrollbar-thin -mx-5 px-5 pb-1">
+                {visiblePhotos.map((photo, index) => (
+                  <div
+                    key={photo.contentId}
+                    className="relative shrink-0 rounded-[18px] overflow-hidden"
+                    style={{
+                      // 첫 장을 크게 둬 잡지 펼침면처럼 리듬을 준다
+                      width: index === 0 ? 232 : 150,
+                      height: 188,
+                      boxShadow: "0 2px 6px rgba(28,26,22,0.06), 0 12px 26px -12px rgba(28,26,22,0.24)",
+                    }}
+                  >
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                      onError={() => setBrokenIds((prev) => [...prev, photo.contentId])}
+                    />
+                    <div
+                      className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
+                      style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72), transparent)" }}
+                    />
+                    <p className="absolute left-3 right-3 bottom-2.5 text-white text-[11.5px] font-bold leading-snug line-clamp-2">
+                      {photo.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[9.5px] mt-2" style={{ color: "var(--color-ink-faint)" }}>
+                사진 ⓒ한국관광공사
+              </p>
+            </div>
+          )}
 
           {/* 여행 성격 */}
           <div
