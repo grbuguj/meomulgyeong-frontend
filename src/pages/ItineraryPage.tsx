@@ -604,7 +604,7 @@ export default function ItineraryPage() {
               <button
                 key={d.day}
                 onClick={() => setActiveDay(d.day)}
-                className="min-w-[80px] px-3 py-2.5 rounded-2xl text-xs font-bold tap shrink-0"
+                className="min-w-[104px] px-4 py-3 rounded-2xl text-[14px] font-extrabold tap shrink-0"
                 style={
                   isActive
                     ? {
@@ -621,7 +621,7 @@ export default function ItineraryPage() {
               >
                 Day {d.day}
                 <br />
-                <span className="font-semibold opacity-90">{weatherText(d.weather)}</span>
+                <span className="text-[11px] font-semibold opacity-90">{weatherText(d.weather)}</span>
               </button>
             );
           })}
@@ -680,78 +680,105 @@ export default function ItineraryPage() {
             return (
               <div
                 key={item.id}
-                className={`relative rounded-[20px] p-3.5 flex gap-3 ${showPlaceImage || hasSupportingText ? "min-h-[92px]" : ""}`}
+                className="relative rounded-[22px] overflow-hidden"
                 style={{
                   background: "white",
-                  boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.09)",
+                  boxShadow: "0 2px 6px rgba(28,26,22,0.05), 0 14px 30px -14px rgba(28,26,22,0.2)",
                   animation: `fadeSlideUp ${0.22 + idx * 0.06}s cubic-bezier(0.16,1,0.3,1) both`,
                   opacity: isSwapping ? 0.5 : 1,
                 }}
               >
-                <div
-                  className="w-6 pt-0.5 shrink-0 flex justify-center"
-                >
-                  <span
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold"
-                    style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink-faint)" }}
-                    aria-label={`일정 ${idx + 1}번째`}
+                {/* 장소 사진은 카드 위에 크게 깐다. 작은 썸네일로는 어디인지 가늠이 안 된다. */}
+                {showPlaceImage && item.imageUrl && (
+                  <button
+                    onClick={() => setImagePreview({ src: item.imageUrl!, name: item.name })}
+                    className="block w-full h-[168px] tap"
+                    aria-label={`${item.name} 사진 크게 보기`}
                   >
-                    {idx + 1}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <div className="flex items-center gap-2 mb-1">
+                    <img
+                      src={item.imageUrl}
+                      alt={`${item.name} 대표 이미지`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.parentElement?.remove();
+                      }}
+                    />
+                  </button>
+                )}
+
+                <div className="p-4">
+                  <div className="flex items-start gap-2.5">
                     <span
-                      className="inline-flex shrink-0 whitespace-nowrap text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: catStyle.bg, color: catStyle.text }}
+                      className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[12px] font-extrabold"
+                      style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink-muted)" }}
+                      aria-label={`일정 ${idx + 1}번째`}
                     >
-                      {CATEGORY_LABEL[item.category]}
+                      {idx + 1}
                     </span>
-                    <p
-                      className="min-w-0 text-[13.5px] font-bold leading-snug"
-                      style={{ color: "var(--color-ink)" }}
-                    >
-                      {item.name}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <span
+                        className="inline-flex whitespace-nowrap text-[11px] font-bold px-2.5 py-1 rounded-full"
+                        style={{ background: catStyle.bg, color: catStyle.text }}
+                      >
+                        {CATEGORY_LABEL[item.category]}
+                      </span>
+                      <p
+                        className="text-[18px] font-extrabold leading-snug mt-1.5 tracking-tight"
+                        style={{ color: "var(--color-ink)" }}
+                      >
+                        {item.name}
+                      </p>
+                    </div>
+                    {canReplace && (
+                      <button
+                        onClick={() => handleSwap(item.id)}
+                        disabled={!!swapping}
+                        className="shrink-0 rounded-full px-3 py-1.5 text-[11.5px] font-bold tap"
+                        style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
+                      >
+                        {isSwapping ? "교체 중…" : "교체 ↻"}
+                      </button>
+                    )}
                   </div>
-                  {item.description && (
-                    <p
-                      className="text-[11.5px] leading-relaxed"
-                      style={{
-                        color: "var(--color-ink-soft)",
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: 2,
-                        overflow: "hidden",
-                      }}
-                    >
-                      {item.description}
-                    </p>
+
+                  {hasSupportingText && (
+                    <div className="mt-2.5 pl-[34px]">
+                      {item.description && (
+                        <p
+                          className="text-[13px] leading-relaxed"
+                          style={{
+                            color: "var(--color-ink-soft)",
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical",
+                            WebkitLineClamp: 2,
+                            overflow: "hidden",
+                          }}
+                        >
+                          {item.description}
+                        </p>
+                      )}
+                      {item.address && (
+                        <p
+                          className="text-[11.5px] leading-snug mt-1"
+                          style={{ color: "var(--color-ink-faint)" }}
+                          title={item.address}
+                        >
+                          📍 {item.address}
+                        </p>
+                      )}
+                    </div>
                   )}
-                  {item.address && (
-                    <p
-                      className="text-[9.5px] leading-snug mt-0.5"
-                      style={{
-                        color: "var(--color-ink-faint)",
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: 2,
-                        overflow: "hidden",
-                      }}
-                      title={item.address}
-                    >
-                      📍 {item.address}
-                    </p>
-                  )}
-                  {(canOpenMap || canOpenOperation || canReplace) && (
-                    <div className="flex items-center gap-2 mt-1.5">
+
+                  {(canOpenMap || canOpenOperation) && (
+                    <div className="flex items-center gap-2 mt-3 pl-[34px]">
                       {canOpenMap && (
                         <a
                           href={`https://map.naver.com/p/search/${mapQuery}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[10px] font-bold tap"
-                          style={{ color: "var(--color-ink-faint)" }}
+                          className="rounded-full px-3 py-2 text-[11.5px] font-bold tap"
+                          style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink-soft)" }}
                         >
                           네이버지도 ↗
                         </a>
@@ -761,8 +788,8 @@ export default function ItineraryPage() {
                           href={`https://map.kakao.com/link/search/${mapQuery}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[10px] font-bold tap"
-                          style={{ color: "var(--color-ink-faint)" }}
+                          className="rounded-full px-3 py-2 text-[11.5px] font-bold tap"
+                          style={{ background: "var(--color-ivory-warm)", color: "var(--color-ink-soft)" }}
                         >
                           카카오맵 ↗
                         </a>
@@ -770,8 +797,8 @@ export default function ItineraryPage() {
                       {canOpenOperation && (
                         <button
                           onClick={() => handleOpenPlaceDetail(item)}
-                          className="text-[10px] font-bold tap"
-                          style={{ color: "var(--color-accent)" }}
+                          className="rounded-full px-3 py-2 text-[11.5px] font-bold tap"
+                          style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
                         >
                           운영정보
                         </button>
@@ -779,37 +806,6 @@ export default function ItineraryPage() {
                     </div>
                   )}
                 </div>
-                {(showPlaceImage || canReplace) && (
-                  <div className="w-[68px] shrink-0 flex flex-col items-end gap-1">
-                    {canReplace && (
-                      <button
-                        onClick={() => handleSwap(item.id)}
-                        disabled={!!swapping}
-                        className="text-[10px] font-bold tap"
-                        style={{ color: "var(--color-accent)" }}
-                      >
-                        {isSwapping ? "교체 중…" : "교체 ↻"}
-                      </button>
-                    )}
-                    {showPlaceImage && item.imageUrl && (
-                      <button
-                        onClick={() => setImagePreview({ src: item.imageUrl!, name: item.name })}
-                        className="w-[68px] h-[68px] rounded-xl overflow-hidden tap"
-                        aria-label={`${item.name} 대표 이미지 크게 보기`}
-                      >
-                        <img
-                          src={item.imageUrl}
-                          alt={`${item.name} 대표 이미지`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                          onError={(event) => {
-                            event.currentTarget.parentElement?.remove();
-                          }}
-                        />
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
