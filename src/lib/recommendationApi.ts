@@ -106,3 +106,24 @@ export interface RegionGalleryResponse {
 export function getRegionGallery(regionId: number): Promise<RegionGalleryResponse> {
   return apiFetch<RegionGalleryResponse>(`/api/regions/${regionId}/gallery`, { auth: false });
 }
+
+export interface StatsSummaryResponse {
+  totalTrips: number;
+  totalTravelers: number;
+  totalPopulationContributionDays: number;
+  totalSpending: number;
+  totalStayHours: number;
+  topRegions: Array<{
+    rank: number;
+    regionId: number;
+    regionName: string;
+    tripCount: number;
+    populationContributionDays: number;
+  }>;
+  calculatedAt: string;
+}
+
+/** 서비스 전체 누적 기여 현황 — 공개 API(로그인 불필요) */
+export function getStatsSummary(): Promise<StatsSummaryResponse> {
+  return apiFetch<StatsSummaryResponse>("/api/stats/summary", { auth: false });
+}

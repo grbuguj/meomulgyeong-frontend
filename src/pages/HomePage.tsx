@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
@@ -5,6 +6,7 @@ import Icon, { type IconName } from "../components/Icon";
 import RegionArt from "../components/RegionArt";
 import { REGIONS } from "../data/regions";
 import { useApp } from "../store/AppContext";
+import { getStatsSummary, type StatsSummaryResponse } from "../lib/recommendationApi";
 
 interface HubCardProps {
   icon: IconName;
@@ -66,6 +68,18 @@ function HubCard({ icon, title, subtitle, onClick, primary }: HubCardProps) {
 export default function HomePage() {
   const { user, savedItineraries } = useApp();
   const navigate = useNavigate();
+
+  // 서비스 전체 누적. 실패하면 이 구역만 빠지고 나머지 화면은 그대로 보인다.
+  const [stats, setStats] = useState<StatsSummaryResponse | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getStatsSummary()
+      .then((res) => {
+        if (!cancelled) setStats(res);
+      })
+      .catch(() => {/* 합계를 못 받아도 내 기록은 보여줄 수 있다 */});
+    return () => { cancelled = true; };
+  }, []);
 
   // 완료한 여행에 이미 기여도 수치가 실려 오므로, 추가 조회 없이 합산한다.
   const totals = user.trips.reduce(
@@ -145,6 +159,64 @@ export default function HomePage() {
             <p className="text-[12px] leading-relaxed mt-1.5" style={{ color: "var(--color-ink-soft)" }}>
               첫 여행을 다녀오면 머문 날이 여기에 쌓여요. 하루 3시간만 머물러도 그 지역에 기록됩니다.
             </p>
+          </div>
+        )}
+
+        {/* 다 같이 쌓은 기록 — 내 기록만 보면 혼자 하는 일 같지만, 합계를 보면 규모가 읽힌다 */}
+        {stats && stats.totalTrips > 0 && (
+          <div
+            className="mx-5 mt-2.5 rounded-[22px] p-4"
+            style={{
+              background: "white",
+              boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 8px 20px -8px rgba(28,26,22,0.09)",
+            }}
+          >
+            <div className="flex items-baseline justify-between">
+              <p className="text-[13px] font-extrabold" style={{ color: "var(--color-ink)" }}>
+                다 같이 경북에 머문 날
+              </p>
+              <p className="text-[16px] font-extrabold" style={{ color: "var(--color-accent)" }}>
+                {stats.totalPopulationContributionDays.toLocaleString("ko-KR")}일
+              </p>
+            </div>
+            <p className="text-[11px] mt-1" style={{ color: "var(--color-ink-faint)" }}>
+              {`${stats.totalTravelers.toLocaleString("ko-KR")}명이 ${stats.totalTrips.toLocaleString("ko-KR")}번 다녀가 ${Math.round(stats.totalSpending / 10000).toLocaleString("ko-KR")}만원을 썼어요`}
+            </p>
+
+            {stats.topRegions.length > 0 && (
+              <div className="mt-3 pt-3 space-y-2" style={{ borderTop: "1px solid var(--color-line-soft)" }}>
+                <p className="text-[11px] font-bold" style={{ color: "var(--color-ink-muted)" }}>
+                  가장 많이 머문 곳
+                </p>
+                {stats.topRegions.slice(0, 3).map((entry) => {
+                  const local = REGIONS.find((r) => r.backendId === entry.regionId);
+                  return (
+                    <button
+                      key={entry.regionId}
+                      onClick={() => local && navigate(`/region/${local.id}`)}
+                      className="w-full flex items-center gap-2.5 tap text-left"
+                    >
+                      <span
+                        className="w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-extrabold"
+                        style={
+                          entry.rank === 1
+                            ? { background: "var(--color-accent)", color: "white" }
+                            : { background: "var(--color-ivory-warm)", color: "var(--color-ink-muted)" }
+                        }
+                      >
+                        {entry.rank}
+                      </span>
+                      <span className="flex-1 text-[13px] font-bold truncate" style={{ color: "var(--color-ink)" }}>
+                        {entry.regionName}
+                      </span>
+                      <span className="text-[11.5px] font-semibold" style={{ color: "var(--color-ink-faint)" }}>
+                        {entry.populationContributionDays.toLocaleString("ko-KR")}일
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
