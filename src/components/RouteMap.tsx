@@ -201,10 +201,13 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
     }
   };
 
+  // 카카오 SDK가 지도 컨테이너 안에 자체 레이어를 깔기 때문에, 조작 버튼은
+  // 명시적으로 그 위로 올려야 보이고 눌린다.
   const controlStyle = {
     background: "rgba(255,255,255,0.94)",
     color: "var(--color-ink)",
     boxShadow: "0 1px 4px rgba(28,26,22,0.18)",
+    zIndex: 30,
   };
 
   return (
@@ -224,13 +227,13 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
       />
 
       {status !== "ready" && (
-        <div className="absolute inset-0 flex items-center justify-center text-[10.5px] font-semibold" style={{ color: "var(--color-forest)" }}>
+        <div className="absolute inset-0 flex items-center justify-center text-[10.5px] font-semibold pointer-events-none" style={{ color: "var(--color-forest)" }}>
           지도를 불러오는 중…
         </div>
       )}
 
-      {status === "ready" && (
-        <>
+      {/* 조작 버튼은 로딩 중에도 자리를 지킨다 */}
+      <>
           {/* 카드 헤더가 이미 "오늘의 동선"이라 지도 위에는 조작 버튼만 얹는다 */}
           {!expanded && (
             <button
@@ -253,7 +256,7 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
           )}
 
           {/* 확대·축소·전체보기 — 엄지가 닿는 오른쪽 아래에 모아둔다 */}
-          <div className={`absolute right-2 flex flex-col gap-1 ${expanded ? "bottom-6" : "bottom-2"}`}>
+          <div className={`absolute right-2 z-30 flex flex-col gap-1 ${expanded ? "bottom-6" : "bottom-2"}`}>
             <button
               onClick={toggleExpanded}
               aria-label={expanded ? "지도 작게 보기" : "지도 전체화면으로 보기"}
@@ -279,8 +282,7 @@ export default function RouteMap({ segments, items }: { segments: RouteSegment[]
               −
             </button>
           </div>
-        </>
-      )}
+      </>
     </div>
   );
 }

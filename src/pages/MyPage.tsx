@@ -458,7 +458,7 @@ export default function MyPage() {
             style={{ borderBottom: "1px solid var(--color-line-soft)" }}
           >
             <span className="font-semibold" style={{ color: "var(--color-ink-soft)" }}>버전</span>
-            <span className="font-bold" style={{ color: "var(--color-ink)" }}>v0.1.0 (MVP)</span>
+            <span className="font-bold" style={{ color: "var(--color-ink)" }}>v0.1.0</span>
           </div>
           <div className="py-3.5" style={{ borderBottom: "1px solid var(--color-line-soft)" }}>
             <div className="flex items-center justify-between gap-3">
@@ -508,10 +508,13 @@ export default function MyPage() {
           style={{ color: "var(--color-ink-soft)" }}
         >
           <p>
-            본 서비스는 2026 관광데이터 활용 공모전 제출을 위한 MVP 데모입니다. 실제 약관 문서는 서비스 정식 출시
-            시점에 법무 검토를 거쳐 게시됩니다.
+            본 서비스는 2026 관광데이터 활용 공모전 출품작입니다. 실제 약관 문서는 서비스 정식 출시 시점에
+            법무 검토를 거쳐 게시됩니다.
           </p>
-          <p>수집 항목: 소셜 로그인 식별정보, 닉네임, 여행 일정·완료 기록(방문 지역, 체류일수, 인원)</p>
+          <p>
+            수집 항목: 소셜 로그인 식별정보, 이름, 이메일, 닉네임, 여행 일정·완료 기록(방문 지역, 체류일수,
+            인원, 지출액)
+          </p>
           <p>이용 목적: 지역 추천 정확도 개선, 지역 기여도 산출, 서비스 품질 개선</p>
         </div>
       </Modal>
