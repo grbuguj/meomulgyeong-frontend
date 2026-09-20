@@ -5,10 +5,22 @@ import Stamp from "../components/Stamp";
 import { REGION_MAP } from "../data/regions";
 import { useApp } from "../store/AppContext";
 
+/** "2026. 10. 1. ~ 10. 4." 처럼 짧게 — 카드 위에 겹쳐 올리므로 길면 잘린다. */
+function formatRange(start: string, end?: string): string {
+  const from = new Date(start);
+  const head = `${from.getFullYear()}. ${from.getMonth() + 1}. ${from.getDate()}.`;
+  if (!end) return head;
+  const to = new Date(end);
+  return `${head} ~ ${to.getMonth() + 1}. ${to.getDate()}.`;
+}
+
 export default function CompletedTripsPage() {
   const { user } = useApp();
   const navigate = useNavigate();
-  const trips = [...user.trips].reverse();
+  // 최근에 다녀온 여행이 위로 온다. 서버가 주는 순서에 기대지 않고 직접 정렬한다.
+  const trips = [...user.trips].sort(
+    (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  );
 
   const totals = trips.reduce(
     (acc, trip) => ({
@@ -66,7 +78,18 @@ export default function CompletedTripsPage() {
                 return (
                   <button
                     key={`${trip.itineraryId}-${trip.completedAt}-${index}`}
-                    onClick={() => region && navigate(`/region/${region.id}`)}
+                    onClick={() => {
+                      if (!region) return;
+                      // 다녀온 일정을 그대로 다시 펼쳐 본다. 날짜·박수가 있어야 서버가 같은 일정을 준다.
+                      const query = new URLSearchParams({
+                        itineraryId: trip.itineraryId,
+                        nights: String(trip.nights ?? Math.max(trip.visitedDays - 1, 1)),
+                        companion: "SOLO",
+                        backendRegionId: String(region.backendId ?? 0),
+                      });
+                      if (trip.startDate) query.set("startDate", trip.startDate);
+                      navigate(`/itinerary/${region.id}?${query.toString()}`);
+                    }}
                     className="w-full rounded-[22px] overflow-hidden text-left tap"
                     style={{
                       background: "white",
@@ -79,13 +102,24 @@ export default function CompletedTripsPage() {
                         className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
                         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.68), transparent)" }}
                       />
-                      <p className="absolute left-4 bottom-3 text-white text-[17px] font-extrabold tracking-tight">
-                        {region?.name ?? "여행 지역"}
-                      </p>
+                      <div className="absolute left-4 right-16 bottom-3">
+                        <p className="text-white text-[17px] font-extrabold tracking-tight leading-tight">
+                          {trip.title ?? region?.name ?? "여행 지역"}
+                        </p>
+                        {trip.startDate && (
+                          <p className="text-[10.5px] font-semibold mt-0.5" style={{ color: "rgba(255,255,255,0.8)" }}>
+                            {formatRange(trip.startDate, trip.endDate)}
+                          </p>
+                        )}
+                      </div>
                       {/* 다녀왔다는 표시를 도장으로 — 마이페이지 스탬프와 같은 모양 */}
                       {region && (
-                        <div className="absolute right-3 bottom-3">
-                          <Stamp seed={region.id} label={region.shortName} collected size={46} />
+                        // 사진 위에 바로 찍으면 잉크색이 묻히므로 종이처럼 흰 바탕을 깐다
+                        <div
+                          className="absolute right-3 bottom-3 rounded-full"
+                          style={{ background: "rgba(255,255,255,0.94)", padding: 4 }}
+                        >
+                          <Stamp seed={region.id} label={region.shortName} collected size={44} />
                         </div>
                       )}
                     </div>

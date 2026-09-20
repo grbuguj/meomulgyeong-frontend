@@ -91,6 +91,11 @@ export interface TripCompletion {
   visitedDays: number;
   visitors: number;
   completedAt: string;
+  /** 다녀온 일정의 정보. 완료 기록에서 어떤 여행이었는지 보여줄 때 쓴다. */
+  title?: string;
+  startDate?: string;
+  endDate?: string;
+  nights?: number;
   contribution?: TripContribution;
 }
 

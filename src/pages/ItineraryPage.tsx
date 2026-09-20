@@ -521,7 +521,12 @@ export default function ItineraryPage() {
         partySize: visitors,
         totalSpent,
       });
-      const trip = toTripCompletion(res, regionId!, stayDays, visitors);
+      const trip = toTripCompletion(res, regionId!, stayDays, visitors, {
+        title: `${region.name} ${itin.nights}박 ${itin.nights + 1}일`,
+        startDate: itin.days[0]?.date,
+        endDate: itin.days[itin.days.length - 1]?.date,
+        nights: itin.nights,
+      });
       completeTrip(trip);
       setCompleteModal(false);
       navigate(`/trip-result/${user.trips.length}`, {

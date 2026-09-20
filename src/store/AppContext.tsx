@@ -163,6 +163,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
               visitedDays: trip.nights + 1,
               visitors: trip.partySize,
               completedAt: trip.completedAt,
+              title: trip.title,
+              startDate: trip.startDate,
+              endDate: trip.endDate,
+              nights: trip.nights,
               contribution: {
                 stayHours: trip.stayHours,
                 estimatedSpending: trip.estimatedSpending,
@@ -241,7 +245,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...u,
       trips: [...u.trips, trip],
       stamps: u.stamps.includes(trip.regionId) ? u.stamps : [...u.stamps, trip.regionId],
+      savedItineraries: u.savedItineraries.filter((id) => id !== trip.itineraryId),
     }));
+    // 다녀온 일정은 "저장한 일정"이 아니라 "완료한 여행"에 속한다. 두 곳에 같이 두면
+    // 저장 목록에서 다시 열어 또 완료할 수 있는 것처럼 보인다.
+    setSavedItineraries((list) => list.filter((i) => i.id !== trip.itineraryId));
   };
 
   const value = useMemo<AppContextValue>(

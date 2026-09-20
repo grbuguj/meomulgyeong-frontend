@@ -407,7 +407,9 @@ export function toTripCompletion(
   res: CompleteItineraryResponse,
   frontendRegionId: string,
   visitedDays: number,
-  visitors: number
+  visitors: number,
+  /** 완료 응답에는 일정 제목·기간이 없다. 방금 보고 있던 일정에서 가져와 채운다. */
+  itinerary?: { title?: string; startDate?: string; endDate?: string; nights?: number }
 ): TripCompletion {
   return {
     itineraryId: String(res.itineraryId),
@@ -415,6 +417,10 @@ export function toTripCompletion(
     visitedDays,
     visitors,
     completedAt: res.completedAt,
+    title: itinerary?.title,
+    startDate: itinerary?.startDate,
+    endDate: itinerary?.endDate,
+    nights: itinerary?.nights,
     contribution: {
       stayHours: res.stayHours,
       reportedSpending: res.totalSpent,
