@@ -8,6 +8,7 @@ import RegionCard from "../components/RegionCard";
 import StepDots from "../components/StepDots";
 import DateRangeCalendar from "../components/DateRangeCalendar";
 import Icon from "../components/Icon";
+import { josa, ro } from "../lib/korean";
 import { REGIONS, REGION_MAP } from "../data/regions";
 import type { Region } from "../types";
 import { useApp } from "../store/AppContext";
@@ -79,22 +80,6 @@ function toDisplayRegion(rec: RegionRecommendation): Region {
     isVerifiedHub: false,
     representativeSpots: rec.representativePlaces,
   };
-}
-
-/** 받침 유무에 따라 조사를 고른다. 한글 음절은 유니코드상 28개 종성 단위로 배열돼 있다. */
-function josa(word: string, withFinal: string, withoutFinal: string): string {
-  const last = word.trim().slice(-1);
-  const code = last.charCodeAt(0);
-  if (code < 0xac00 || code > 0xd7a3) return withoutFinal;
-  return (code - 0xac00) % 28 > 0 ? withFinal : withoutFinal;
-}
-
-/** "으로 / 로" 는 받침이 ㄹ일 때도 "로"를 쓴다. */
-function ro(word: string): string {
-  const code = word.trim().slice(-1).charCodeAt(0);
-  if (code < 0xac00 || code > 0xd7a3) return "로";
-  const finalConsonant = (code - 0xac00) % 28;
-  return finalConsonant === 0 || finalConsonant === 8 ? "로" : "으로";
 }
 
 /**

@@ -5,6 +5,8 @@ import Button from "../components/Button";
 import Modal from "../components/Modal";
 import ItineraryMobility from "../components/ItineraryMobility";
 import Icon from "../components/Icon";
+import { LogoMark } from "../components/Logo";
+import { josa } from "../lib/korean";
 import { REGION_MAP } from "../data/regions";
 import type { DayPlan, Itinerary, PlaceItem, TripCompletion } from "../types";
 import { useApp } from "../store/AppContext";
@@ -250,6 +252,8 @@ export default function ItineraryPage() {
 
   const [itin, setItin] = useState<Itinerary | null>(null);
   const [backendItineraryId, setBackendItineraryId] = useState<number | null>(null);
+  /** 일정이 다시 짜일 때마다 서버가 올려주는 값. 경로를 다시 받을 시점을 판단한다. */
+  const [generationVersion, setGenerationVersion] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [missingDates, setMissingDates] = useState(false);
@@ -310,6 +314,7 @@ export default function ItineraryPage() {
         const frontendItin = toFrontendItinerary(res, regionId!);
         setItin(frontendItin);
         setBackendItineraryId(res.itineraryId);
+        setGenerationVersion(res.generationVersion);
         setStayDays(frontendItin.days.length);
         setActiveDay(1);
         // 저장 목록에서 "일정 완료"로 들어온 경우 바로 완료 입력을 띄운다.
@@ -361,7 +366,9 @@ export default function ItineraryPage() {
         if (!cancelled) setRoutesLoading(false);
       });
     return () => { cancelled = true; };
-  }, [backendItineraryId, activeDayNumber, transportMode]);
+  // generationVersion을 함께 본다. 재생성·교체를 해도 일정 id와 날짜는 그대로라
+  // 이 값이 없으면 장소만 바뀌고 경로·지도는 이전 것이 남는다.
+  }, [backendItineraryId, activeDayNumber, transportMode, generationVersion]);
 
   if (!region) {
     return (
@@ -439,6 +446,7 @@ export default function ItineraryPage() {
       const res = await replaceItineraryItem(backendItineraryId, numericItemId);
       const updated = await getItinerary(res.itineraryId);
       setItin(toFrontendItinerary(updated, regionId!));
+      setGenerationVersion(updated.generationVersion);
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : "장소를 교체하지 못했어요. 다시 시도해주세요.");
     } finally {
@@ -455,6 +463,9 @@ export default function ItineraryPage() {
       await regenerateFullItinerary(backendItineraryId);
       const res = await getItinerary(backendItineraryId);
       setItin(toFrontendItinerary(res, regionId!));
+      setGenerationVersion(res.generationVersion);
+      // 이전 일정 기준으로 받아둔 수단 비교 결과는 더 이상 맞지 않는다
+      setRouteComparison(null);
       setActiveDay(1);
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : "일정을 다시 만들지 못했어요. 다시 시도해주세요.");
@@ -586,16 +597,23 @@ export default function ItineraryPage() {
         {/* Header */}
         <div className="px-5 pt-4 pb-3">
           <span
-            className="text-[10.5px] font-extrabold tracking-[0.18em] uppercase"
-            style={{ color: "var(--color-accent)" }}
+            className="inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-3 py-1"
+            style={{ background: "var(--color-ivory-warm)" }}
           >
-            AUTO-PLAN
+            <LogoMark size={20} />
+            <span
+              className="font-serif-kr text-[12px] font-bold tracking-tight leading-none"
+              style={{ color: "#1E4E8C" }}
+            >
+              머물<span style={{ color: "#FF8F5A" }}>;</span>경이 짠 일정
+            </span>
           </span>
           <h2
-            className="text-[22px] font-extrabold mt-1 tracking-tight"
+            className="text-[22px] font-extrabold mt-2 tracking-tight"
             style={{ color: "var(--color-ink)" }}
           >
-            {region.shortName}을 천천히.
+            {region.shortName}
+            {josa(region.shortName, "을", "를")} 천천히.
           </h2>
           <p
             className="text-[13px] mt-0.5"
