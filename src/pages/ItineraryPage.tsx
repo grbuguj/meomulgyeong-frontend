@@ -649,6 +649,7 @@ export default function ItineraryPage() {
         )}
 
         <ItineraryMobility
+          part="map"
           mode={transportMode}
           route={routes}
           loading={routesLoading}
@@ -809,6 +810,18 @@ export default function ItineraryPage() {
           })}
         </div>
 
+        <ItineraryMobility
+          part="detail"
+          mode={transportMode}
+          route={routes}
+          loading={routesLoading}
+          error={routesError}
+          comparison={routeComparison}
+          comparing={comparingRoutes}
+          onModeChange={setTransportMode}
+          onCompare={handleCompareRoutes}
+        />
+
         <div className="px-5 mt-5 grid grid-cols-2 gap-2.5">
           <Button variant="secondary" onClick={handleRegenerateAll} disabled={regenerating}>
             {regenerating ? "재생성 중…" : "전체 재생성"}
@@ -834,9 +847,17 @@ export default function ItineraryPage() {
           background: "linear-gradient(to top, var(--color-ivory) 75%, transparent)",
         }}
       >
-        <Button variant="accent" fullWidth onClick={() => setCompleteModal(true)}>
-          여행 완료
-        </Button>
+        {/* 방금 만든 일정에 "여행 완료"를 띄우면 아직 가지도 않은 여행을 끝내라는 말이 된다.
+            저장 전에는 저장을, 저장한 뒤(=다녀올 일정이 된 뒤)에 완료를 권한다. */}
+        {isSaved ? (
+          <Button variant="accent" fullWidth onClick={() => setCompleteModal(true)}>
+            다녀왔어요 · 여행 완료
+          </Button>
+        ) : (
+          <Button variant="accent" fullWidth onClick={handleToggleSave} disabled={bookmarkLoading}>
+            {bookmarkLoading ? "저장 중…" : "이 일정 저장하기"}
+          </Button>
+        )}
       </div>
 
       {/* 인쇄 · PDF 저장용 문서 — 화면에는 보이지 않고, 인쇄 시 모든 날짜가 한 번에 출력된다 */}

@@ -51,7 +51,13 @@ function totals(route: ItineraryRoutesResponse) {
   return { duration, fare };
 }
 
+/**
+ * 일정 화면의 이동 정보.
+ * 화면의 주인공은 장소 목록이라, 동선 지도는 그 위에("map") 구간별 상세는 그 아래("detail")에
+ * 나뉘어 놓인다. 두 자리 모두 같은 조회 결과를 쓰므로 한 컴포넌트에서 파트만 갈라 그린다.
+ */
 export default function ItineraryMobility({
+  part,
   mode,
   route,
   loading,
@@ -61,6 +67,7 @@ export default function ItineraryMobility({
   onModeChange,
   onCompare,
 }: {
+  part: "map" | "detail";
   mode: TransportMode;
   route: ItineraryRoutesResponse | null;
   loading: boolean;
@@ -71,33 +78,44 @@ export default function ItineraryMobility({
   onCompare: () => void;
 }) {
   const regionTransit = route?.regionTransit;
+
+  if (part === "map") {
+    return (
+      <section className="mx-5 mt-4 rounded-[20px] p-3.5" style={{ background: "white", boxShadow: "0 6px 18px -10px rgba(28,26,22,0.18)" }}>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-[12.5px] font-extrabold" style={{ color: "var(--color-ink)" }}>오늘의 동선</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "var(--color-ink-faint)" }}>날짜별 실제 경로를 조회했어요</p>
+          </div>
+          <div className="flex rounded-xl p-0.5" style={{ background: "var(--color-ivory-warm)" }}>
+            {(["CAR", "TRANSIT"] as const).map((candidate) => (
+              <button
+                key={candidate}
+                onClick={() => onModeChange(candidate)}
+                className="px-2.5 py-1.5 rounded-[10px] text-[10px] font-extrabold tap"
+                style={candidate === mode ? { background: "white", color: "var(--color-accent)", boxShadow: "0 1px 4px rgba(28,26,22,0.1)" } : { color: "var(--color-ink-muted)" }}
+              >
+                {candidate === "CAR" ? "🚗 자차" : "🚌 대중교통"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading && <p className="mt-4 text-[11px] font-semibold" style={{ color: "var(--color-ink-muted)" }}>이동 경로를 불러오는 중…</p>}
+        {error && <p className="mt-4 text-[11px] font-semibold" style={{ color: "#c2410c" }}>{error}</p>}
+        {route && !loading && <RouteSketch segments={route.segments} />}
+      </section>
+    );
+  }
+
+  // 구간별 상세 — 장소 목록을 다 본 뒤에 확인하는 보조 정보
+  if (!route || loading) return null;
+
   return (
     <section className="mx-5 mt-4 rounded-[20px] p-3.5" style={{ background: "white", boxShadow: "0 6px 18px -10px rgba(28,26,22,0.18)" }}>
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className="text-[12.5px] font-extrabold" style={{ color: "var(--color-ink)" }}>오늘의 이동</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "var(--color-ink-faint)" }}>날짜별 실제 경로를 조회했어요</p>
-        </div>
-        <div className="flex rounded-xl p-0.5" style={{ background: "var(--color-ivory-warm)" }}>
-          {(["CAR", "TRANSIT"] as const).map((candidate) => (
-            <button
-              key={candidate}
-              onClick={() => onModeChange(candidate)}
-              className="px-2.5 py-1.5 rounded-[10px] text-[10px] font-extrabold tap"
-              style={candidate === mode ? { background: "white", color: "var(--color-accent)", boxShadow: "0 1px 4px rgba(28,26,22,0.1)" } : { color: "var(--color-ink-muted)" }}
-            >
-              {candidate === "CAR" ? "🚗 자차" : "🚌 대중교통"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {loading && <p className="mt-4 text-[11px] font-semibold" style={{ color: "var(--color-ink-muted)" }}>이동 경로를 불러오는 중…</p>}
-      {error && <p className="mt-4 text-[11px] font-semibold" style={{ color: "#c2410c" }}>{error}</p>}
-
+      <p className="text-[12.5px] font-extrabold" style={{ color: "var(--color-ink)" }}>구간별 이동 정보</p>
       {route && !loading && (
         <>
-          <RouteSketch segments={route.segments} />
           <div className="mt-3 space-y-2">
             {route.segments.map((segment) => (
               <div key={`${segment.fromItemId}-${segment.toItemId}`} className="rounded-xl px-3 py-2.5" style={{ background: "var(--color-ivory)" }}>
