@@ -2,8 +2,8 @@ import type { SVGProps } from "react";
 
 export type IconName = "arrow-left" | "bookmark" | "calendar" | "map" | "home" | "compass" | "user" | "sparkles" | "chevron-right" | "settings" | "sun" | "moon" | "contrast";
 
-export default function Icon({ name, size = 20, strokeWidth = 1.9, ...props }: { name: IconName; size?: number; strokeWidth?: number } & SVGProps<SVGSVGElement>) {
-  const common = { fill: "none", stroke: "currentColor", strokeWidth, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+export default function Icon({ name, size = 20, strokeWidth = 1.9, filled = false, ...props }: { name: IconName; size?: number; strokeWidth?: number; /** 속을 채워 '켜짐' 상태를 나타낸다(윤곽선만으로는 구분이 잘 안 되는 북마크 등). */ filled?: boolean } & SVGProps<SVGSVGElement>) {
+  const common = { fill: filled ? "currentColor" : "none", stroke: "currentColor", strokeWidth, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   const paths: Record<IconName, React.ReactNode> = {
     "arrow-left": <><path {...common} d="M19 12H5" /><path {...common} d="m12 19-7-7 7-7" /></>,
     bookmark: <path {...common} d="M7 4.5A2.5 2.5 0 0 1 9.5 2h5A2.5 2.5 0 0 1 17 4.5V21l-5-3.2L7 21V4.5Z" />,

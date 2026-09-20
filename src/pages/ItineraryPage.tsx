@@ -95,6 +95,7 @@ export default function ItineraryPage() {
   const [completing, setCompleting] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [savedNotice, setSavedNotice] = useState(false);
   const [imagePreview, setImagePreview] = useState<{ src: string; name: string } | null>(null);
   const [transportMode, setTransportMode] = useState<TransportMode>("CAR");
   const [routes, setRoutes] = useState<ItineraryRoutesResponse | null>(null);
@@ -155,6 +156,13 @@ export default function ItineraryPage() {
     () => (itin ? savedItineraries.some((i) => i.id === itin.id) : false),
     [savedItineraries, itin]
   );
+
+  // 저장 확인 문구는 잠시만 띄운다. 저장 여부 자체는 상단 북마크 버튼 색으로 계속 보인다.
+  useEffect(() => {
+    if (!savedNotice) return;
+    const timer = setTimeout(() => setSavedNotice(false), 3000);
+    return () => clearTimeout(timer);
+  }, [savedNotice]);
 
   const day = useMemo(
     () => itin?.days.find((candidate) => candidate.day === activeDay) ?? itin?.days[0] ?? null,
@@ -320,6 +328,7 @@ export default function ItineraryPage() {
     try {
       await bookmarkItinerary(backendItineraryId);
       saveItinerary(itin);
+      setSavedNotice(true);
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : "일정을 저장하지 못했어요. 다시 시도해주세요.");
     } finally {
@@ -362,9 +371,24 @@ export default function ItineraryPage() {
           <button
             onClick={handleSave}
             disabled={bookmarkLoading || isSaved}
-            className="w-9 h-9 rounded-full bg-white card-soft flex items-center justify-center text-base tap"
+            aria-label={isSaved ? "저장된 일정" : "일정 저장하기"}
+            title={isSaved ? "저장됨 · 마이페이지에서 볼 수 있어요" : "일정 저장하기"}
+            className="w-9 h-9 rounded-full flex items-center justify-center tap"
+            style={
+              isSaved
+                ? {
+                    background: "linear-gradient(135deg, #3b82f6, var(--color-accent-dark))",
+                    color: "white",
+                    boxShadow: "0 4px 12px -4px rgba(43,108,224,0.55)",
+                  }
+                : {
+                    background: "white",
+                    color: "var(--color-ink)",
+                    boxShadow: "0 1px 2px rgba(28,26,22,0.04), 0 6px 14px -6px rgba(28,26,22,0.08)",
+                  }
+            }
           >
-            <Icon name={isSaved ? "bookmark" : "calendar"} size={18} />
+            <Icon name="bookmark" size={18} filled={isSaved} />
           </button>
         }
       />
@@ -436,6 +460,16 @@ export default function ItineraryPage() {
           <p className="px-5 mt-3 text-[12px] font-semibold" style={{ color: "#c2410c" }}>
             {actionError}
           </p>
+        )}
+
+        {savedNotice && (
+          <div
+            className="mx-5 mt-3 rounded-2xl px-4 py-3 flex items-center gap-2 text-[12px] font-semibold animate-in"
+            style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
+          >
+            <Icon name="bookmark" size={14} filled />
+            일정을 저장했어요 · 마이페이지에서 다시 볼 수 있어요
+          </div>
         )}
 
         <ItineraryMobility
