@@ -105,20 +105,22 @@ export default function HomePage() {
               boxShadow: "0 12px 30px -12px rgba(43,108,224,0.55)",
             }}
           >
-            <p className="text-[11.5px] font-bold" style={{ color: "rgba(255,255,255,0.78)" }}>
-              머물;경으로 남긴 자국
+            <p className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.8)" }}>
+              {user.nickname}님이 경북에서
             </p>
-            <p className="text-[30px] font-extrabold text-white leading-none mt-2">
-              생활인구 {totals.populationDays.toLocaleString("ko-KR")}일
+            <p className="text-[15px] font-bold text-white mt-1.5">머문 날</p>
+            <p className="text-[46px] font-extrabold text-white leading-none mt-0.5">
+              {totals.populationDays.toLocaleString("ko-KR")}
+              <span className="text-[20px] ml-1.5">일</span>
             </p>
             <div
               className="grid grid-cols-3 gap-2 mt-4 pt-3.5"
               style={{ borderTop: "1px solid rgba(255,255,255,0.22)" }}
             >
               {[
-                ["여행", `${user.trips.length}번`],
-                ["지역 소비", `${(totals.spending / 10000).toFixed(0)}만원`],
-                ["체류", `${totals.stayHours.toLocaleString("ko-KR")}시간`],
+                ["다녀온 여행", `${user.trips.length}번`],
+                ["다녀온 지역", `${user.stamps.length}곳`],
+                ["쓴 금액", `${(totals.spending / 10000).toFixed(0)}만원`],
               ].map(([label, value]) => (
                 <div key={label}>
                   <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>
@@ -128,6 +130,9 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+            <p className="text-[9.5px] leading-snug mt-3" style={{ color: "rgba(255,255,255,0.62)" }}>
+              머문 날은 그 지역의 생활인구로 집계돼요 · 행정안전부 기준
+            </p>
           </div>
         ) : (
           <div
@@ -135,10 +140,10 @@ export default function HomePage() {
             style={{ background: "var(--color-accent-soft)" }}
           >
             <p className="text-[14px] font-extrabold" style={{ color: "var(--color-accent-dark)" }}>
-              아직 남긴 자국이 없어요
+              아직 머문 날이 없어요
             </p>
             <p className="text-[12px] leading-relaxed mt-1.5" style={{ color: "var(--color-ink-soft)" }}>
-              하루 3시간만 머물러도 그 지역의 생활인구로 집계돼요. 첫 여행을 완료하면 여기에 쌓입니다.
+              첫 여행을 다녀오면 머문 날이 여기에 쌓여요. 하루 3시간만 머물러도 그 지역에 기록됩니다.
             </p>
           </div>
         )}

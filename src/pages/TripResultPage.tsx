@@ -4,6 +4,7 @@ import TopBar from "../components/TopBar";
 import Button from "../components/Button";
 import StatTile from "../components/StatTile";
 import { LogoMark } from "../components/Logo";
+import Stamp from "../components/Stamp";
 import { REGION_MAP } from "../data/regions";
 import { calcContribution, MINIMUM_STAY_HOURS_PER_DAY } from "../lib/contribution";
 import type { Itinerary, TripCompletion } from "../types";
@@ -71,6 +72,9 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
   const stayBaseline = trip.visitedDays * MINIMUM_STAY_HOURS_PER_DAY;
   const stayBaselineMultiple = stayBaseline > 0 ? Math.round(stayHours / stayBaseline) : 0;
 
+  // 이 지역을 몇 번째로 다녀왔는지 — 도장에 횟수를 새긴다
+  const visitCount = user.trips.filter((t) => t.regionId === trip.regionId).length || 1;
+
   const [shareLabel, setShareLabel] = useState("공유하기");
 
   const handleShare = async () => {
@@ -97,6 +101,24 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
     <>
       <TopBar title="이번 여행이 남긴 자국" onBack />
       <div className="flex-1 overflow-y-auto px-5 py-5 pb-10">
+        {/* 도장이 찍히는 순간 — 여행을 마쳤다는 걸 숫자보다 먼저 보여준다 */}
+        <div className="flex flex-col items-center pt-2 pb-6">
+          <Stamp
+            seed={region.id}
+            label={region.shortName}
+            collected
+            size={104}
+            pressing
+            visitCount={visitCount}
+          />
+          <p
+            className="text-[12.5px] font-bold mt-4 animate-in"
+            style={{ color: "var(--color-accent-dark)", animationDelay: "0.6s" }}
+          >
+            {visitCount > 1 ? `${region.shortName} ${visitCount}번째 도장` : `${region.shortName} 첫 도장을 찍었어요`}
+          </p>
+        </div>
+
         {/* Header */}
         <div className="mb-6">
           <p
@@ -122,12 +144,12 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
           }}
         >
           <p className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.78)" }}>
-            생활인구 산입
+            {region.name}에 머문 날
           </p>
           <p className="text-[24px] font-extrabold leading-tight mt-1.5 text-white">
-            {region.name} 생활인구에
+            <span className="text-[40px]">{Math.round(animatedPopulationDays)}일</span>
             <br />
-            <span className="text-[34px]">{Math.round(animatedPopulationDays)}일</span>이 더해졌어요
+            {region.shortName} 사람으로 지냈어요
           </p>
           <div
             className="mt-4 pt-4 text-[11.5px] leading-relaxed"

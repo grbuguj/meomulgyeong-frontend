@@ -89,6 +89,14 @@ function josa(word: string, withFinal: string, withoutFinal: string): string {
   return (code - 0xac00) % 28 > 0 ? withFinal : withoutFinal;
 }
 
+/** "으로 / 로" 는 받침이 ㄹ일 때도 "로"를 쓴다. */
+function ro(word: string): string {
+  const code = word.trim().slice(-1).charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return "로";
+  const finalConsonant = (code - 0xac00) % 28;
+  return finalConsonant === 0 || finalConsonant === 8 ? "로" : "으로";
+}
+
 /**
  * 추천 근거 문장.
  * 서버가 주는 recommendationReason은 지역 설명이라 "내가 고른 조건과 왜 맞는지"가 드러나지 않는다.
@@ -109,46 +117,46 @@ function buildMatchStory(
 ): { headline: string; body: string } {
   const matched = rec.matchedTags.map((code) => input.tagLabels.get(code) ?? code).filter(Boolean);
   const [firstPlace, secondPlace] = rec.representativePlaces;
-  const name = rec.regionName;
-  const short = name.replace(/(시|군)$/, "");
+  const short = rec.regionName.replace(/(시|군)$/, "");
   const withCompanion = `${input.companionLabel}${josa(input.companionLabel, "과", "와")}`;
   const nightsText = `${input.nights}박 ${input.nights + 1}일`;
-  const allMatched = matched.length > 0 && matched.length >= input.selectedTagCount;
+  const identity = rec.identityStatement.replace(/\.$/, "");
+  const tagList = matched.join(" · ");
 
-  // 전부 맞은 경우 — 취향 일치를 앞세운다
-  if (allMatched) {
+  // 1순위 — 고른 취향이 출발점. 사용자의 선택을 되짚는 말로 연다.
+  if (rec.rank === 1) {
     return {
-      headline: `고른 ${matched.length}가지가 전부 맞았어요`,
+      headline: `${input.nickname}님 취향에 가장 가까워요`,
       body:
-        `${matched.join("도 ")}도 ${short}${josa(short, "이", "가")} 잘하는 것들이에요. ` +
+        (tagList ? `${tagList}${josa(tagList, "을", "를")} 고르셨죠. ` : "") +
+        `${short}${josa(short, "은", "는")} ${identity}${ro(identity)} 불리는 곳이에요. ` +
         (firstPlace
-          ? `${firstPlace}${josa(firstPlace, "은", "는")} ${withCompanion} 가기 특히 좋고요.`
-          : `${rec.identityStatement}.`),
+          ? `${firstPlace}부터 잡으면 ${nightsText}이 빠듯하지 않습니다.`
+          : `${nightsText} 일정에 무리가 없어요.`),
     };
   }
 
-  // 일부만 맞은 경우 — 기간과 동선을 앞세운다
-  if (matched.length > 0) {
-    const roomy = input.nights >= 3;
+  // 2순위 — 장소가 출발점. 어디를 보게 되는지로 연다.
+  if (rec.rank === 2) {
     return {
-      headline: roomy ? `${nightsText}이면 넉넉해요` : `짧게 다녀오기 좋아요`,
+      headline: firstPlace ? `${firstPlace}, 여기가 궁금하다면` : `이런 선택지도 있어요`,
       body:
-        `${matched.join(" · ")} 쪽으로 맞췄어요. ` +
-        (roomy
-          ? `${withCompanion} ${nightsText}이면 ${firstPlace ?? short}에서 하루를 통째로 써도 돼요.`
-          : `${nightsText}에 맞춰 ${firstPlace ?? short} 근처로 동선을 좁혔어요.`) +
-        (secondPlace ? ` ${secondPlace}까지 붙이면 딱 맞습니다.` : ""),
+        `${short}${josa(short, "은", "는")} ${identity}. ` +
+        (secondPlace
+          ? `${withCompanion} 간다면 ${firstPlace}${josa(firstPlace ?? "", "과", "와")} ${secondPlace}${josa(secondPlace, "을", "를")} 묶어 도는 쪽이 편해요.`
+          : `${withCompanion} 가는 ${nightsText}에 맞춰 동선을 담았어요.`),
     };
   }
 
-  // 겹치는 취향이 없는 경우 — 왜 그래도 추천했는지를 말한다
+  // 3순위 이하 — 앞의 두 곳과 무엇이 다른지로 연다.
   return {
-    headline: `고른 조건 밖이지만 한 번 보세요`,
+    headline: `앞의 두 곳과는 결이 달라요`,
     body:
-      `${rec.identityStatement}. ` +
-      `${input.nickname}님이 고른 취향과 직접 겹치진 않지만, ` +
-      `${withCompanion} 가는 ${nightsText}에는 이런 결도 잘 맞아요.` +
-      (firstPlace ? ` ${firstPlace}부터 둘러보면 좋습니다.` : ""),
+      (tagList ? `${tagList} 쪽에서도 이름이 있지만, 분위기가 다릅니다. ` : "") +
+      `${identity}. ` +
+      (firstPlace
+        ? `${input.nights >= 3 ? `${nightsText}이면 ` : ""}${firstPlace} 한 곳에 오래 머물러도 아깝지 않아요.`
+        : `천천히 머물기 좋은 곳이에요.`),
   };
 }
 

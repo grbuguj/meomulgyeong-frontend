@@ -404,3 +404,58 @@ button {
     break-after: avoid;
   }
 }
+
+/* ===== 스탬프 =====
+   여행을 마치면 도장이 내리꽂히듯 찍힌다. 크게 들어와 한 번 튕기고 자리를 잡는다. */
+@keyframes stampPress {
+  0% {
+    transform: scale(2.7) rotate(-20deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  58% {
+    transform: scale(0.86) rotate(-8deg);
+  }
+  72% {
+    transform: scale(1.07) rotate(-5.5deg);
+  }
+  86% {
+    transform: scale(0.97) rotate(-7deg);
+  }
+  100% {
+    transform: scale(1) rotate(-6.5deg);
+    opacity: 1;
+  }
+}
+
+/* 찍히는 순간 퍼지는 충격 파동 */
+@keyframes stampShock {
+  0% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+  55% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+
+.animate-stamp-press {
+  animation: stampPress 0.62s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+.animate-stamp-shock {
+  animation: stampShock 0.62s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-stamp-press,
+  .animate-stamp-shock {
+    animation: none;
+  }
+}

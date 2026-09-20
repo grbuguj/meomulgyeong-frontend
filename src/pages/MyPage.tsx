@@ -10,6 +10,7 @@ import Button from "../components/Button";
 import { ApiError } from "../lib/apiClient";
 import { useTheme } from "../store/ThemeContext";
 import Icon from "../components/Icon";
+import Stamp from "../components/Stamp";
 
 export default function MyPage() {
   const { user, savedItineraries, removeSavedItinerary, logout, updateNickname } = useApp();
@@ -123,39 +124,36 @@ export default function MyPage() {
           </div>
         </div>
 
-        {/* 스탬프 */}
+        {/* 스탬프 — 여권 도장처럼 모아 보는 자리 */}
         <div className="px-5 mt-6">
-          <p
-            className="text-[14px] font-bold mb-3"
-            style={{ color: "var(--color-ink)" }}
+          <div className="flex items-baseline justify-between mb-3">
+            <p className="text-[14px] font-bold" style={{ color: "var(--color-ink)" }}>
+              여행 스탬프
+            </p>
+            <p className="text-[11.5px] font-bold" style={{ color: "var(--color-ink-faint)" }}>
+              {user.stamps.length} / {REGIONS.length}
+            </p>
+          </div>
+          <div
+            className="rounded-[22px] px-4 py-5"
+            style={{
+              background: "var(--color-ivory-warm)",
+              // 도장을 찍는 종이처럼 보이도록 안쪽에 옅은 테두리를 둔다
+              boxShadow: "inset 0 0 0 1.5px rgba(30,78,140,0.1)",
+            }}
           >
-            경상북도 15개 지역 스탬프
-          </p>
-          <div className="grid grid-cols-5 gap-2">
-            {REGIONS.map((r) => {
-              const done = user.stamps.includes(r.id);
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => navigate(`/region/${r.id}`)}
-                  className="aspect-square rounded-xl flex items-center justify-center text-[10px] font-bold tap"
-                  style={
-                    done
-                      ? {
-                          background: "linear-gradient(135deg, #3b82f6, var(--color-accent-dark))",
-                          color: "white",
-                          boxShadow: "0 4px 12px -4px rgba(43,108,224,0.5)",
-                        }
-                      : {
-                          background: "var(--color-ivory-warm)",
-                          color: "var(--color-ink-faint)",
-                        }
-                  }
-                >
-                  {r.shortName}
+            <div className="grid grid-cols-5 gap-y-4 justify-items-center">
+              {REGIONS.map((r) => (
+                <button key={r.id} onClick={() => navigate(`/region/${r.id}`)} className="tap">
+                  <Stamp
+                    seed={r.id}
+                    label={r.shortName}
+                    collected={user.stamps.includes(r.id)}
+                    size={54}
+                  />
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
         </div>
 
