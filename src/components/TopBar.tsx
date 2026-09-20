@@ -15,9 +15,12 @@ export default function TopBar({
   const isBrand = title === "머물;경";
 
   return (
+    // 높이를 고정한다. 안에 들어가는 것(로고·버튼·제목만)에 따라 페이지마다
+    // 상단바 높이가 달라 보이던 문제가 있었다.
     <div
-      className="flex items-center justify-between px-4 py-3 glass-ivory sticky top-0 z-10"
+      className="flex items-center justify-between px-4 glass-ivory sticky top-0 z-10 shrink-0"
       style={{
+        height: 56,
         borderBottom: "1px solid rgba(228,222,200,0.45)",
       }}
     >
@@ -36,9 +39,9 @@ export default function TopBar({
 
       {isBrand ? (
         <span className="flex items-center gap-1.5">
-          <LogoMark size={26} />
+          <LogoMark size={22} />
           <span
-            className="font-serif-kr text-[20px] font-bold tracking-tight"
+            className="font-serif-kr text-[17px] font-bold tracking-tight leading-none"
             style={{ color: "#1E4E8C" }}
           >
             머물<span style={{ color: "#FF8F5A" }}>;</span>경
