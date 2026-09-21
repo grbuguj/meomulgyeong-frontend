@@ -1083,7 +1083,7 @@ export default function ItineraryPage() {
                   )}
                 </div>
               )}
-              <p className="text-[9.5px] leading-relaxed" style={{ color: "var(--color-ink-faint)" }}>{placeDetail.info.notice} · {placeDetail.info.source}</p>
+              <p className="text-[9.5px] leading-relaxed" style={{ color: "var(--color-ink-faint)" }}>{placeDetail.info.notice}</p>
             </>
           )}
         </div>
