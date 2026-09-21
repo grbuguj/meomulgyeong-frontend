@@ -123,7 +123,7 @@ export default function HomePage() {
             <p className="text-[13.5px] leading-relaxed mt-2.5" style={{ color: "var(--color-ink-soft)" }}>
               취향·날짜·동행만 고르면 동선까지 맞춰 일정이 나와요.
               <br />
-              하루 3시간만 머물러도 그 지역의 생활인구로 집계됩니다.
+              머문 기록을 바탕으로 지역 기여 지표를 보여드려요.
             </p>
 
             <Button variant="accent" fullWidth className="mt-5" onClick={() => navigate("/plan")}>
@@ -276,7 +276,7 @@ export default function HomePage() {
                 {[
                   ["다녀온 여행", `${user.trips.length}번`],
                   ["다녀온 지역", `${user.stamps.length}곳`],
-                  ["쓴 금액", `${(totals.spending / 10000).toFixed(0)}만원`],
+                  ["추정 지역 소비", `${(totals.spending / 10000).toFixed(0)}만원`],
                 ].map(([label, value]) => (
                   <div key={label}>
                     <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>
@@ -291,7 +291,7 @@ export default function HomePage() {
             <>
               <p className="text-[15px] font-extrabold text-white">아직 머문 날이 없어요</p>
               <p className="text-[12px] leading-relaxed mt-1.5" style={{ color: "rgba(255,255,255,0.82)" }}>
-                첫 여행을 다녀오면 머문 날이 여기에 쌓여요. 하루 3시간만 머물러도 그 지역에 기록됩니다.
+                첫 여행을 다녀오면 머문 날이 여기에 쌓여요. 여행 기록은 지역 기여 지표로 남습니다.
               </p>
             </>
           )}
@@ -310,7 +310,7 @@ export default function HomePage() {
                 </p>
               </div>
               <p className="text-[10px] mt-0.5" style={{ color: "var(--color-ink-faint)" }}>
-                {`${stats.totalTravelers.toLocaleString("ko-KR")}명이 ${stats.totalTrips.toLocaleString("ko-KR")}번 다녀가 ${Math.round(stats.totalSpending / 10000).toLocaleString("ko-KR")}만원을 썼어요`}
+                {`${stats.totalTravelers.toLocaleString("ko-KR")}명이 ${stats.totalTrips.toLocaleString("ko-KR")}번 다녀가 추정 지역 소비 ${Math.round(stats.totalSpending / 10000).toLocaleString("ko-KR")}만원을 기록했어요`}
               </p>
 
               {stats.topRegions.length > 0 && (
@@ -354,7 +354,7 @@ export default function HomePage() {
           )}
 
           <p className="text-[9.5px] leading-snug mt-3" style={{ color: "rgba(255,255,255,0.62)" }}>
-            머문 날은 그 지역의 생활인구로 집계돼요 · 행정안전부 기준
+            머문 날은 생활인구 산정 기준을 참고한 지역 기여 지표예요
           </p>
         </div>
 

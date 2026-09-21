@@ -636,7 +636,11 @@ export default function ItineraryPage() {
             return (
               <button
                 key={d.day}
-                onClick={() => setActiveDay(d.day)}
+                onClick={() => {
+                  setActiveDay(d.day);
+                  // 날짜가 달라지면 이전 날짜를 기준으로 계산한 수단 비교표는 무효다.
+                  setRouteComparison(null);
+                }}
                 className="min-w-[104px] px-4 py-3 rounded-2xl text-[14px] font-extrabold tap shrink-0"
                 style={
                   isActive
@@ -677,8 +681,8 @@ export default function ItineraryPage() {
                 ["머문 날", `${completedTrip.contribution?.populationContributionDays ?? completedTrip.visitedDays}일`],
                 ["함께한 사람", `${completedTrip.visitors}명`],
                 [
-                  "쓴 금액",
-                  `${(((completedTrip.contribution?.estimatedSpending ?? completedTrip.contribution?.reportedSpending) ?? 0) / 10000).toFixed(0)}만원`,
+                  completedTrip.contribution?.reportedSpending !== undefined ? "입력 소비" : "추정 지역 소비",
+                  `${(((completedTrip.contribution?.reportedSpending ?? completedTrip.contribution?.estimatedSpending) ?? 0) / 10000).toFixed(0)}만원`,
                 ],
               ].map(([label, value]) => (
                 <div key={label}>

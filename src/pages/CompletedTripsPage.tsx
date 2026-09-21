@@ -147,7 +147,7 @@ export default function CompletedTripsPage() {
                         {spending > 0 && (
                           <div>
                             <p className="text-[9.5px] font-semibold" style={{ color: "var(--color-ink-faint)" }}>
-                              쓴 금액
+                              추정 지역 소비
                             </p>
                             <p className="text-[14px] font-extrabold" style={{ color: "var(--color-ink)" }}>
                               {(spending / 10000).toFixed(0)}만원

@@ -64,9 +64,10 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
     trip.visitors
   );
   const server = trip.contribution;
-  const isServerCalculated = server != null;
   const stayHours = server?.stayHours ?? estimated.stayHours;
-  const spend = server?.estimatedSpending ?? server?.reportedSpending ?? estimated.estimatedSpend;
+  const reportedSpend = server?.reportedSpending;
+  const spend = reportedSpend ?? server?.estimatedSpending ?? estimated.estimatedSpend;
+  const spendLabel = reportedSpend !== undefined ? "입력 소비" : "추정 지역 소비";
   const populationDays = server?.populationContributionDays ?? estimated.livingPopulationDays;
 
   // 체류시간이 산입 기준(하루 3시간)의 몇 배인지 — 숫자에 크기를 가늠할 기준을 붙인다
@@ -79,7 +80,7 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
   const [shareLabel, setShareLabel] = useState("공유하기");
 
   const handleShare = async () => {
-    const text = `${region.name} 생활인구에 ${populationDays}일을 더했어요. ${trip.visitedDays}일 머물고 ${(spend / 10000).toFixed(1)}만원을 썼습니다. — 머물;경`;
+    const text = `${region.name}에 ${populationDays}일 머문 지역 기여 기록을 남겼어요. ${trip.visitedDays}일 머물고 ${(spend / 10000).toFixed(1)}만원을 기록했습니다. — 머물;경`;
     try {
       // 모바일에서는 시스템 공유 시트, 데스크톱 등 미지원 환경에서는 클립보드로 떨어뜨린다.
       if (navigator.share) {
@@ -172,20 +173,19 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
           }}
         >
           <p className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.78)" }}>
-            {region.name}에 머문 날
+            {region.name} 지역 기여 기록
           </p>
           <p className="text-[24px] font-extrabold leading-tight mt-1.5 text-white">
             <span className="text-[40px]">{Math.round(animatedPopulationDays)}일</span>
             <br />
-            {region.shortName} 사람으로 지냈어요
+            {region.shortName}에서 머문 기록이에요
           </p>
           <div
             className="mt-4 pt-4 text-[11.5px] leading-relaxed"
             style={{ borderTop: "1px solid rgba(255,255,255,0.22)", color: "rgba(255,255,255,0.88)" }}
           >
-            행정안전부는 하루 {MINIMUM_STAY_HOURS_PER_DAY}시간 이상 머문 사람을 그 지역의 생활인구로 셉니다.
-            인구감소지역의 체류인구는 등록인구의 <strong className="text-white">약 4.6배</strong> —
-            잠깐 머문 사람들이 그 지역을 떠받치고 있다는 뜻이에요.
+            하루 {MINIMUM_STAY_HOURS_PER_DAY}시간 이상 체류 기준을 참고해 여행 기록을 계산했어요.
+            이 수치는 서비스 안에서 보여주는 지역 기여 지표이며, 실제 공공 통계에 반영되는 값은 아닙니다.
           </div>
         </div>
 
@@ -199,7 +199,7 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
             note={stayBaselineMultiple ? `산입 기준의 ${stayBaselineMultiple}배` : undefined}
           />
           <StatTile
-            label={isServerCalculated ? "지역 소비" : "예상 소비"}
+            label={spendLabel}
             value={animatedSpend.toFixed(1)}
             unit="만원"
             tone="amber"
@@ -252,10 +252,8 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
           className="text-[10.5px] mt-5 leading-relaxed"
           style={{ color: "var(--color-ink-faint)" }}
         >
-          {isServerCalculated
-            ? "체류시간·소비·생활인구 산입 일수는 서버가 실제 여행 기록을 기준으로 산출한 값입니다."
-            : "예상 소비 금액은 국내여행 조사 기반 1인 1일 평균 지출액으로 산출한 추정값입니다."}{" "}
-          생활인구 산입 일수는 행정안전부 「인구감소지역 지원 특별법」 시행령상 체류 기준을 적용했습니다.
+          체류일수와 소비 금액은 사용자가 확인한 여행 기록을 바탕으로 표시합니다. 지역 기여 일수는
+          생활인구 산정 기준을 참고해 계산한 서비스 내 지표이며, 실제 공공 통계에 반영되는 값은 아닙니다.
         </p>
 
         <div className="grid grid-cols-2 gap-2.5 mt-6">
@@ -289,16 +287,16 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
           {region.name}에 남긴 자국
         </p>
         <h1 style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.25, marginBottom: 18 }}>
-          {region.name} 생활인구에
+          {region.name}에 남긴
           <br />
-          {populationDays}일이 더해졌습니다
+          {populationDays}일의 지역 기여 기록
         </h1>
 
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 18 }}>
           <tbody>
             {[
               ["체류시간", `${stayHours}시간`],
-              ["지역 소비", `${(spend / 10000).toFixed(1)}만원`],
+              [spendLabel, `${(spend / 10000).toFixed(1)}만원`],
               ["방문 지역", `${user.stamps.length} / 15곳`],
               ["여행 기간", `${trip.visitedDays}일 · ${trip.visitors}명`],
             ].map(([label, value]) => (
@@ -311,11 +309,8 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
         </table>
 
         <p style={{ fontSize: 9, lineHeight: 1.7, color: "#555" }}>
-          행정안전부는 하루 {MINIMUM_STAY_HOURS_PER_DAY}시간 이상 머문 사람을 그 지역의 생활인구로 셉니다.
-          인구감소지역의 체류인구는 등록인구의 약 4.6배입니다. (행정안전부, 2025.6)
-          <br />
-          생활인구 산입 일수는 「인구감소지역 지원 특별법」 시행령상 체류 기준을 적용했습니다.
-          {!isServerCalculated && " 소비 금액은 국내여행 조사 기반 1인 1일 평균 지출액 기준 추정값입니다."}
+          지역 기여 일수는 하루 {MINIMUM_STAY_HOURS_PER_DAY}시간 이상 체류 기준을 참고해 계산한 서비스 내 지표입니다.
+          실제 공공 통계에 반영되는 값은 아닙니다.
         </p>
       </div>
     </>
