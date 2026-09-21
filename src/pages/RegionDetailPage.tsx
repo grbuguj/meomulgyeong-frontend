@@ -15,7 +15,7 @@ export default function RegionDetailPage() {
   const { user } = useApp();
   const region = regionId ? REGION_MAP[regionId] : undefined;
 
-  // 대표 사진은 한국관광공사에서 받아온다. 실패해도 화면은 그대로 보여준다.
+  // 대표 사진은 관광 공공데이터에서 받아온다. 실패해도 화면은 그대로 보여준다.
   const [photos, setPhotos] = useState<RegionGalleryResponse["photos"]>([]);
   // 링크가 죽은 사진은 빼버린다. 한 장도 안 남으면 섹션 자체를 감춘다.
   const [brokenIds, setBrokenIds] = useState<number[]>([]);
@@ -166,7 +166,7 @@ export default function RegionDetailPage() {
                 ))}
               </div>
               <p className="text-[9.5px] mt-2" style={{ color: "var(--color-ink-faint)" }}>
-                사진 ⓒ한국관광공사
+                사진 · 관광 공공데이터 제공
               </p>
             </div>
           )}

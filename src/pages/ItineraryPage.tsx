@@ -223,7 +223,7 @@ function AmountField({
 function SourceNote({ className = "", style }: { className?: string; style?: CSSProperties }) {
   return (
     <div className={className} style={style}>
-      <p>· 장소 정보 ⓒ한국관광공사 「국문 관광정보 서비스」</p>
+      <p>· 장소 정보는 관광 공공데이터를 기반으로 제공됩니다.</p>
       <p>· 날씨 기상청 단기예보 — 발표 시점 기준 예보값입니다.</p>
       <p>· 영업시간·휴무일은 변동될 수 있습니다. 방문 전 해당 장소에 확인해주세요.</p>
     </div>
@@ -338,7 +338,7 @@ export default function ItineraryPage() {
     [savedItineraries, itin]
   );
 
-  // 금액을 기억 못 하는 경우가 많아 한국관광공사 1인 1일 평균 지출액 기준 예상액을 제안한다.
+  // 금액을 기억 못 하는 경우가 많아 국내여행 조사 기반 1인 1일 평균 지출액으로 예상액을 제안한다.
   // 기본값으로 밀어 넣지는 않는다 — 실제로 쓴 값이 아닌 수치가 기여도로 집계되면 안 된다.
   const suggestedSpend = stayDays * visitors * ESTIMATED_SPEND_PER_PERSON_DAY;
 

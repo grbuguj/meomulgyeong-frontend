@@ -1,6 +1,6 @@
 import type { Itinerary } from "../types";
 
-// 한국관광공사 「국민여행조사」 1인 1일 평균 지출액(숙박·식음료·체험활동) 참고 — mock 단가
+// 국내여행 조사 1인 1일 평균 지출액(숙박·식음료·체험활동) 참고 — mock 단가
 const PER_DAY_SPEND = {
   lodging: 45000,
   food: 32000,

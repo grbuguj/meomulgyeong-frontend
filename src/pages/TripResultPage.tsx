@@ -254,7 +254,7 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
         >
           {isServerCalculated
             ? "체류시간·소비·생활인구 산입 일수는 서버가 실제 여행 기록을 기준으로 산출한 값입니다."
-            : "예상 소비 금액은 한국관광공사 「국민여행조사」 1인 1일 평균 지출액을 기준으로 산출한 추정값입니다."}{" "}
+            : "예상 소비 금액은 국내여행 조사 기반 1인 1일 평균 지출액으로 산출한 추정값입니다."}{" "}
           생활인구 산입 일수는 행정안전부 「인구감소지역 지원 특별법」 시행령상 체류 기준을 적용했습니다.
         </p>
 
@@ -315,7 +315,7 @@ function TripResult({ trip, itinerary }: { trip: TripCompletion; itinerary: Itin
           인구감소지역의 체류인구는 등록인구의 약 4.6배입니다. (행정안전부, 2025.6)
           <br />
           생활인구 산입 일수는 「인구감소지역 지원 특별법」 시행령상 체류 기준을 적용했습니다.
-          {!isServerCalculated && " 소비 금액은 한국관광공사 「국민여행조사」 1인 1일 평균 지출액 기준 추정값입니다."}
+          {!isServerCalculated && " 소비 금액은 국내여행 조사 기반 1인 1일 평균 지출액 기준 추정값입니다."}
         </p>
       </div>
     </>
