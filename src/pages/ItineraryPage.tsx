@@ -37,13 +37,6 @@ const CATEGORY_LABEL: Record<string, string> = {
   transit: "이동",
 };
 
-/** 이동·휴식은 경유 상태라 제외하고, 실제 방문한 장소만 여행 진행도로 기록한다. */
-function isVisitTrackable(item: PlaceItem) {
-  return item.category !== "transit" && item.category !== "stay";
-}
-
-const JOURNEY_PROGRESS_STORAGE_PREFIX = "meomulgyeong_journey_progress_v1";
-
 const CATEGORY_STYLE: Record<string, { bg: string; text: string }> = {
   attraction: { bg: "var(--color-mint-soft)", text: "#0a8a65" },
   food: { bg: "var(--color-amber-soft)", text: "#b96210" },
@@ -285,8 +278,6 @@ export default function ItineraryPage() {
   const [placeDetail, setPlaceDetail] = useState<{ item: PlaceItem; info: OperationInfoResponse | null } | null>(null);
   const [operationLoading, setOperationLoading] = useState(false);
   const [operationError, setOperationError] = useState<string | null>(null);
-  // 방문 체크는 개인 여행 기록이라 서버 완료 전에는 이 기기 안에만 보관한다.
-  const [visitedItemIds, setVisitedItemIds] = useState<string[]>([]);
 
   const created = useRef(false);
 
@@ -363,54 +354,6 @@ export default function ItineraryPage() {
     [itin, activeDay]
   );
   const activeDayNumber = day?.day;
-  const trackableItemIds = useMemo(
-    () => itin?.days.flatMap((plan) => plan.items.filter(isVisitTrackable).map((item) => item.id)) ?? [],
-    [itin]
-  );
-  const activeDayTrackableItems = useMemo(
-    () => day?.items.filter(isVisitTrackable) ?? [],
-    [day]
-  );
-  const progressStorageKey = backendItineraryId
-    ? `${JOURNEY_PROGRESS_STORAGE_PREFIX}:${backendItineraryId}`
-    : null;
-  const visitedPlaceCount = trackableItemIds.filter((id) => visitedItemIds.includes(id)).length;
-  const activeVisitedPlaceCount = activeDayTrackableItems.filter((item) => visitedItemIds.includes(item.id)).length;
-
-  useEffect(() => {
-    if (!progressStorageKey) return;
-    try {
-      const stored = JSON.parse(window.localStorage.getItem(progressStorageKey) ?? "[]");
-      const next = Array.isArray(stored)
-        ? stored.filter((id): id is string => typeof id === "string" && trackableItemIds.includes(id))
-        : [];
-      setVisitedItemIds(next);
-    } catch {
-      setVisitedItemIds([]);
-    }
-  }, [progressStorageKey, trackableItemIds]);
-
-  const updateJourneyProgress = (next: string[]) => {
-    setVisitedItemIds(next);
-    if (!progressStorageKey) return;
-    try {
-      window.localStorage.setItem(progressStorageKey, JSON.stringify(next));
-    } catch {
-      // 저장 공간을 쓸 수 없어도 이번 화면 안에서는 체크 상태를 유지한다.
-    }
-  };
-
-  const toggleVisitedPlace = (itemId: string) => {
-    updateJourneyProgress(
-      visitedItemIds.includes(itemId)
-        ? visitedItemIds.filter((id) => id !== itemId)
-        : [...visitedItemIds, itemId]
-    );
-  };
-
-  const resetJourneyProgress = () => {
-    updateJourneyProgress([]);
-  };
 
   useEffect(() => {
     if (!backendItineraryId || !activeDayNumber) return;
@@ -510,8 +453,6 @@ export default function ItineraryPage() {
       const updated = await getItinerary(res.itineraryId);
       setItin(toFrontendItinerary(updated, regionId!));
       setGenerationVersion(updated.generationVersion);
-      // 같은 순번의 장소가 새 후보로 바뀌었으므로, 기존 방문 체크는 새 장소에 승계하지 않는다.
-      updateJourneyProgress(visitedItemIds.filter((id) => id !== itemId));
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : "장소를 교체하지 못했어요. 다시 시도해주세요.");
     } finally {
@@ -532,7 +473,6 @@ export default function ItineraryPage() {
       // 이전 일정 기준으로 받아둔 수단 비교 결과는 더 이상 맞지 않는다
       setRouteComparison(null);
       setActiveDay(1);
-      resetJourneyProgress();
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : "일정을 다시 만들지 못했어요. 다시 시도해주세요.");
     } finally {
@@ -805,40 +745,10 @@ export default function ItineraryPage() {
         />
 
         {/* Timeline */}
-        {activeDayTrackableItems.length > 0 && !completedTrip && (
-          <div
-            className="mx-5 mt-4 rounded-[18px] px-4 py-3"
-            style={{ background: "var(--color-mint-soft)" }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[12px] font-extrabold" style={{ color: "#08795a" }}>
-                  오늘의 여행 기록 · {activeVisitedPlaceCount}/{activeDayTrackableItems.length}곳
-                </p>
-                <p className="text-[10.5px] mt-0.5" style={{ color: "#39806c" }}>
-                  다녀온 장소를 체크하면 여행이 더 또렷하게 남아요.
-                </p>
-              </div>
-              <span className="text-[17px]" aria-hidden="true">
-                {activeVisitedPlaceCount === activeDayTrackableItems.length ? "✓" : "○"}
-              </span>
-            </div>
-            <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(8,121,90,0.16)" }}>
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${(activeVisitedPlaceCount / activeDayTrackableItems.length) * 100}%`,
-                  background: "var(--color-mint)",
-                }}
-              />
-            </div>
-          </div>
-        )}
         <div className="px-5 mt-4 space-y-2.5">
           {day.items.map((item, idx) => {
             const catStyle = CATEGORY_STYLE[item.category] ?? CATEGORY_STYLE.stay;
             const isSwapping = swapping === item.id;
-            const isVisited = visitedItemIds.includes(item.id);
             // 실제 장소 카드만 대표 이미지를 보여준다. 이동·휴식은 타임라인을 빠르게 훑을 수 있도록 텍스트형으로 유지한다.
             const showPlaceImage = Boolean(item.imageUrl) && !["transit", "stay"].includes(item.category);
             const hasSupportingText = Boolean(item.description || item.address);
@@ -976,21 +886,6 @@ export default function ItineraryPage() {
                       )}
                     </div>
                   )}
-                  {isVisitTrackable(item) && !completedTrip && (
-                    <button
-                      type="button"
-                      onClick={() => toggleVisitedPlace(item.id)}
-                      aria-pressed={isVisited}
-                      className="mt-3 ml-[34px] rounded-full px-3 py-2 text-[11.5px] font-extrabold tap"
-                      style={
-                        isVisited
-                          ? { background: "var(--color-mint-soft)", color: "#08795a" }
-                          : { background: "var(--color-ivory-warm)", color: "var(--color-ink-soft)" }
-                      }
-                    >
-                      {isVisited ? "✓ 다녀왔어요" : "여기 다녀왔어요"}
-                    </button>
-                  )}
                 </div>
               </div>
             );
@@ -1042,9 +937,7 @@ export default function ItineraryPage() {
           </Button>
         ) : isSaved ? (
           <Button variant="accent" fullWidth onClick={() => setCompleteModal(true)}>
-            {visitedPlaceCount > 0
-              ? `${visitedPlaceCount}/${trackableItemIds.length}곳 기록 · 여행 완료`
-              : "다녀왔어요 · 여행 완료"}
+            다녀왔어요 · 여행 완료
           </Button>
         ) : (
           <Button variant="accent" fullWidth onClick={handleToggleSave} disabled={bookmarkLoading}>
