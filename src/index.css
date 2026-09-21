@@ -163,6 +163,9 @@ body {
 }
 
 .phone-shell__screen {
+  /* 페이지 내부의 바텀시트(Modal)는 브라우저 전체가 아니라 앱 화면 안에서만 열린다.
+     데스크톱에서는 이 요소가 휴대폰 프레임이므로, 이를 기준점으로 잡아야 한다. */
+  position: relative;
   flex: 1;
   min-width: 0;
   height: 100dvh;
