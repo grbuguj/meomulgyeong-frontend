@@ -751,7 +751,9 @@ export default function ItineraryPage() {
             const canOpenMap = !["transit", "stay"].includes(item.category);
             const canOpenOperation = !["transit", "stay"].includes(item.category);
             const canReplace = item.replaceable ?? (item.category !== "stay" && item.category !== "transit");
-            const mapQuery = encodeURIComponent([item.name, item.address].filter(Boolean).join(" "));
+            // 지도 앱에서는 주소보다 장소명이 우선이다. 주소를 함께 넣으면 상호명이 약하거나
+            // 표기가 다른 곳에서 주소 검색 결과로 흐려질 수 있어, 일정에 표시한 장소명만 넘긴다.
+            const mapQuery = encodeURIComponent(item.name);
             return (
               <div
                 key={item.id}
